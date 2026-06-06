@@ -653,3 +653,47 @@ header.container-fluid nav details.dropdown > ul li a {
   gap: 0.35rem;
   margin-bottom: 0.75rem;
 }
+
+/* Mobile modal: full-screen with sticky header/footer so close and action
+   buttons are always reachable regardless of content length */
+@media (max-width: 900px) {
+  dialog#track-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    overflow: hidden;
+  }
+  dialog#track-modal > article {
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    margin: 0;
+    border-radius: 0;
+  }
+  dialog#track-modal > article > header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--pico-card-background-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    margin-bottom: 0.75rem;
+  }
+  dialog#track-modal > article > footer.modal-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--pico-card-background-color);
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+    margin-top: 0.75rem;
+  }
+  #modal-lyrics {
+    max-height: none;
+  }
+}
