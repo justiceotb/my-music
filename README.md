@@ -7,7 +7,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Imports your Discogs vinyl collection into a SQLite database (incremental - safe to re-run)
 - Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for every track (no API token required)
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
-- Responsive web UI: search by title, lyrics content, or theme tag; browse by album; click any track for full lyrics and summary
+- Responsive web UI: search by artist, album, title, lyrics, or theme tag; browse by album; click any track for full lyrics and summary
 - All background tasks (sync, lyrics, summarise) are triggerable from the UI
 
 ## Project Structure
@@ -194,7 +194,7 @@ python all-songs.py --token TOKEN [--file tracks.xlsx]
 
 Open `http://localhost:5000` after starting the app.
 
-- **Search bar** - searches track title, lyrics, summary, and theme tags simultaneously
+- **Search bar** - searches artist, album title, track title, lyrics, and summary simultaneously
 - **Tag cloud** - click any tag to filter; click again to clear
 - **Filter chips** - one-click filters above the track list: *Has lyrics*, *No lyrics*, *Tagged*; toggleable, compose with search/album/tag filters
 - **Albums sidebar** - click to filter by album
