@@ -46,12 +46,12 @@ def strip_lrc(text: str) -> str:
     return "\n".join(line for line in lines if line.strip()).strip()
 
 
-def search(artist: str, title: str) -> str | None:
+def search(artist: str, title: str, providers: list[str] | None = None) -> str | None:
     """Return plain-text lyrics or None."""
     query = f"{artist} {title}"
-    log.debug("syncedlyrics query: %r", query)
+    log.debug("syncedlyrics query: %r providers: %s", query, providers)
     try:
-        result = syncedlyrics.search(query, plain_only=True)
+        result = syncedlyrics.search(query, plain_only=True, providers=providers)
     except Exception as ex:
         log.warning("syncedlyrics raised for %r: %s", query, ex)
         return None
@@ -60,9 +60,9 @@ def search(artist: str, title: str) -> str | None:
     return strip_lrc(result)
 
 
-def fetch_one(artist: str, title: str) -> None:
+def fetch_one(artist: str, title: str, providers: list[str] | None = None) -> None:
     log.debug("Ad-hoc query - artist=%r title=%r", artist, title)
-    lyrics = search(artist, title)
+    lyrics = search(artist, title, providers)
     if lyrics:
         print(f"  ✓ {artist} - {title}\n")
         print(lyrics)
@@ -70,7 +70,7 @@ def fetch_one(artist: str, title: str) -> None:
         print(f"  ✗ Not found: {artist} - {title}")
 
 
-def fetch_lyrics(db_path: str, batch_size: int) -> None:
+def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = None) -> None:
     init_db(db_path)
     conn = get_connection(db_path)
 
@@ -105,7 +105,7 @@ def fetch_lyrics(db_path: str, batch_size: int) -> None:
             source = "not_found"
 
             try:
-                lyrics = search(artist, title)
+                lyrics = search(artist, title, providers)
                 if lyrics:
                     source = "syncedlyrics"
                     total_fetched += 1
@@ -160,15 +160,23 @@ def main() -> None:
     )
     parser.add_argument("--artist", default=None, help="Artist name for ad-hoc lookup (requires --title)")
     parser.add_argument("--title", default=None, help="Song title for ad-hoc lookup (requires --artist)")
+    parser.add_argument(
+        "-p", "--providers",
+        nargs="+",
+        type=str.lower,
+        default=["lrclib", "netease", "megalobiz", "genius"],
+        choices=["musixmatch", "lrclib", "netease", "megalobiz", "genius"],
+        help="Providers to search (default: all except musixmatch)",
+    )
     args = parser.parse_args()
 
     if bool(args.artist) != bool(args.title):
         parser.error("--artist and --title must be used together")
 
     if args.artist and args.title:
-        fetch_one(args.artist, args.title)
+        fetch_one(args.artist, args.title, args.providers)
     else:
-        fetch_lyrics(args.db, args.batch)
+        fetch_lyrics(args.db, args.batch, args.providers)
 
 
 if __name__ == "__main__":

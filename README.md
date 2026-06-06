@@ -19,7 +19,7 @@ my-music/
 ├── import_discogs.py     # Discogs → SQLite importer
 ├── fetch_lyrics_ovh.py   # lyrics.ovh lyrics fetcher
 ├── fetch_lyrics_genius.py  # Genius lyrics fetcher (search_songs + lyrics() API)
-├── fetch_lyrics_synced.py  # syncedlyrics fetcher - multi-provider, no token required
+├── fetch_lyrics_synced.py  # syncedlyrics fetcher - lrclib/netease/megalobiz/genius, no token required
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)
@@ -48,7 +48,7 @@ my-music/
 albums (discogs_id, title, year, artists_sort, styles, format, notes, imported_at)
 
 tracks (id, album_id, position, title, artists,
-        lyrics, lyrics_fetched_at, lyrics_source,   -- "lyrics_ovh" | "not_found" | "error"
+        lyrics, lyrics_fetched_at, lyrics_source,   -- "syncedlyrics"|"lyrics_ovh"|"genius" (found) | "not_found" | "error" | NULL (unprocessed)
         summary, theme_tags,                         -- JSON array e.g. '["longing","travel"]'
         ai_processed_at)
 ```
