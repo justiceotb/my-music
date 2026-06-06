@@ -86,6 +86,14 @@ header.container-fluid .version-badge {
   border-color: var(--pico-primary);
 }
 
+/* Filter chips bar */
+.filter-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
 /* Album list */
 #album-list {
   margin-bottom: 0.5rem;
