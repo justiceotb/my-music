@@ -9,6 +9,7 @@ const state = {
 };
 
 let jobPollTimer = null;
+let currentJobId = null;
 
 // ── Utility ──────────────────────────────────
 
@@ -133,11 +134,11 @@ function renderTracks({ tracks, total, page, per_page }) {
       ? '<span class="badge badge-ai">summarised</span>'
       : "";
 
+    const trackArtist = t.artists || t.artists_sort || "";
     card.innerHTML = `
       <h4>${escHtml(t.title)}</h4>
       <div class="track-meta">
-        ${escHtml(t.artists || t.artists_sort || "")} &mdash;
-        ${escHtml(t.album)} (${t.year || "?"})
+        ${trackArtist ? escHtml(trackArtist) + ' &mdash; ' : ''}${escHtml(t.album)} (${t.year || "?"})
         ${t.position ? `&middot; ${escHtml(t.position)}` : ""}
         ${lyricsBadge} ${aiBadge}
       </div>
@@ -244,6 +245,7 @@ el("sort-select").addEventListener("change", e => {
 // ── Actions ───────────────────────────────────
 
 function startJob(jobId, fetchFn) {
+  currentJobId = jobId;
   fetchFn().then(() => {
     showJobBanner("Running…");
     pollJob(jobId);
@@ -291,15 +293,20 @@ el("btn-summarise-claude").addEventListener("click", e => {
 
 function showJobBanner(msg, state = "running") {
   const banner = el("job-banner");
-  banner.classList.remove("hidden", "job-done", "job-error");
-  if (state === "done")  banner.classList.add("job-done");
-  if (state === "error") banner.classList.add("job-error");
+  banner.classList.remove("hidden", "job-done", "job-error", "job-stopped");
+  if (state === "done")    banner.classList.add("job-done");
+  if (state === "error")   banner.classList.add("job-error");
+  if (state === "stopped") banner.classList.add("job-stopped");
   el("job-message").textContent = msg;
+
+  const running = state === "running";
+  el("job-stop").classList.toggle("hidden", !running);
+  el("job-dismiss").classList.toggle("hidden", running);
 }
 
 function hideJobBanner() {
   el("job-banner").classList.add("hidden");
-  el("job-banner").classList.remove("job-done", "job-error");
+  el("job-banner").classList.remove("job-done", "job-error", "job-stopped");
   clearInterval(jobPollTimer);
 }
 
@@ -329,6 +336,10 @@ function pollJob(jobId) {
         loadTracks();
         loadTags();
         loadAlbums();
+      } else if (job.status === "stopped") {
+        clearInterval(jobPollTimer);
+        showJobBanner("Stopped", "stopped");
+        updateJobOutput(job.output || "(stopped)");
       } else if (job.status === "error") {
         clearInterval(jobPollTimer);
         showJobBanner("Job failed", "error");
@@ -337,6 +348,12 @@ function pollJob(jobId) {
     } catch (_) {}
   }, 2000);
 }
+
+el("job-stop").addEventListener("click", () => {
+  if (currentJobId) {
+    apiFetch(`/api/stop/${currentJobId}`, { method: "POST" }).catch(() => {});
+  }
+});
 
 el("job-dismiss").addEventListener("click", () => hideJobBanner());
 
