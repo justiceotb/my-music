@@ -10,6 +10,7 @@ running this again only adds new releases.
 """
 import argparse
 import os
+import time
 from datetime import datetime, timezone
 
 import discogs_client
@@ -45,6 +46,7 @@ def import_collection(token: str, db_path: str) -> None:
         existing = {row[0] for row in conn.execute("SELECT discogs_id FROM albums")}
 
     for release in me.collection_folders[0].releases:
+        time.sleep(1.0)  # polite delay — Discogs rate limit
         rid = release.release.id
 
         # Skip duplicates within the same Discogs collection response
@@ -56,49 +58,57 @@ def import_collection(token: str, db_path: str) -> None:
             albums_skipped += 1
             continue
 
-        # Build format string
-        discogs_format = ""
-        for fmt in release.release.formats:
-            name = fmt.get("name", "")
-            descs = " ".join(fmt.get("descriptions", []))
-            discogs_format = f"{discogs_format} {name} {descs}".strip()
+        print(f"  + {release.release.title} ({release.release.year})", flush=True)
 
         try:
-            notes = release.notes[2]["value"]
-        except Exception:
-            notes = ""
+            # Build format string
+            discogs_format = ""
+            for fmt in release.release.formats:
+                name = fmt.get("name", "")
+                descs = " ".join(fmt.get("descriptions", []))
+                discogs_format = f"{discogs_format} {name} {descs}".strip()
 
-        try:
-            artists_sort = release.release.artists_sort
-        except Exception:
-            artists_sort = ""
+            try:
+                notes = release.notes[2]["value"]
+            except Exception:
+                notes = ""
 
-        styles = " ".join(release.release.styles) if release.release.styles else ""
+            try:
+                artists_sort = release.release.artists_sort
+            except Exception:
+                artists_sort = ""
 
-        with transaction(db_path) as conn:
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO albums
-                    (discogs_id, title, year, artists_sort, styles, format, notes, imported_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (rid, release.release.title, release.release.year,
-                 artists_sort, styles, discogs_format, notes, now_iso()),
-            )
+            styles = " ".join(release.release.styles) if release.release.styles else ""
 
-            for track in release.release.tracklist:
-                track_artists = " ".join(a.name for a in track.artists).strip()
+            with transaction(db_path) as conn:
                 conn.execute(
                     """
-                    INSERT INTO tracks (album_id, position, title, artists)
-                    VALUES (?, ?, ?, ?)
+                    INSERT OR IGNORE INTO albums
+                        (discogs_id, title, year, artists_sort, styles, format, notes, imported_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (rid, track.position, track.title, track_artists or None),
+                    (rid, release.release.title, release.release.year,
+                     artists_sort, styles, discogs_format, notes, now_iso()),
                 )
-                tracks_added += 1
 
-        albums_added += 1
-        print(f"  + {release.release.title} ({release.release.year})")
+                try:
+                    for track in release.release.tracklist:
+                        track_artists = " ".join(a.name for a in track.artists).strip()
+                        conn.execute(
+                            """
+                            INSERT INTO tracks (album_id, position, title, artists)
+                            VALUES (?, ?, ?, ?)
+                            """,
+                            (rid, track.position, track.title, track_artists or None),
+                        )
+                        tracks_added += 1
+                except Exception as track_ex:
+                    print(f"    [warn] tracklist unavailable: {track_ex}", flush=True)
+
+            albums_added += 1
+        except Exception as ex:
+            print(f"  [skip] release {rid} — {ex}", flush=True)
+            continue
 
     print(
         f"\nDone. Albums added: {albums_added}, skipped: {albums_skipped}, "
