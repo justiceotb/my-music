@@ -71,6 +71,13 @@ def enrich_collection(token: str, db_path: str) -> None:
             except Exception:
                 pass
 
+            if not artists_sort:
+                try:
+                    names = [a.name for a in release.artists if a.name]
+                    artists_sort = " / ".join(names)
+                except Exception:
+                    pass
+
             year = None
             try:
                 year = release.year or None
