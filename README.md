@@ -18,7 +18,7 @@ my-music/
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
 ├── fetch_lyrics.py       # lyrics.ovh lyrics fetcher
-├── fetch_lyrics_genius.py  # Archived Genius fetcher (reference only)
+├── fetch_lyrics_genius.py  # Genius lyrics fetcher (search_songs + lyrics() API)
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)

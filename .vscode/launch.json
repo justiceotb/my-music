@@ -19,9 +19,23 @@
   //   VS Code will load these automatically via the extension.
   //
   // NOTE: .env is already in .gitignore — safe to store real tokens there.
-
   "version": "0.2.0",
   "configurations": [
+    {
+      "name": "Python Debugger: Current File with Arguments",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "args": [
+        "--genius-token",
+        "${env:GENIUS_TOKEN}",
+        "--artist",
+        "Biffy Clyro",
+        "--title", 
+        "Break A Butterfly On A Wheel"
+      ]
+    },
     {
       // Run the full test suite. Uses ${env:VAR} so tokens come from your
       // OS environment or a .env file loaded by the DotENV extension.
@@ -29,7 +43,10 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/", "-v"],
+      "args": [
+        "tests/",
+        "-v"
+      ],
       "cwd": "${workspaceFolder}",
       "env": {
         "DISCOGS_TOKEN": "${env:DISCOGS_TOKEN}",
@@ -44,7 +61,10 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["${file}", "-v"],
+      "args": [
+        "${file}",
+        "-v"
+      ],
       "cwd": "${workspaceFolder}",
       "env": {
         "DISCOGS_TOKEN": "${env:DISCOGS_TOKEN}",

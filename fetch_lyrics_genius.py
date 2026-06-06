@@ -38,10 +38,13 @@ def now_iso() -> str:
 def fetch_one(genius, artist: str, title: str) -> None:
     log.debug("Ad-hoc query — artist=%r title=%r", artist, title)
     try:
-        song = genius.search_song(title, artist)
-        if song and song.lyrics:
+        response = genius.search_songs(f"{title} {artist}")
+        hits = (response or {}).get('hits', [])
+        song_url = hits[0]['result']['url'] if hits else None
+        lyrics = genius.lyrics(song_url=song_url, remove_section_headers=True) if song_url else None
+        if lyrics:
             print(f"  ✓ {artist} — {title}\n")
-            print(song.lyrics)
+            print(lyrics)
         else:
             print(f"  ✗ Not found: {artist} — {title}")
     except Exception as ex:
@@ -99,16 +102,18 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
 
             log.debug("Querying Genius: track_id=%s artist=%r title=%r", track_id, artist, title)
             try:
-                song = genius.search_song(title, artist)
-                if song and song.lyrics:
-                    lyrics = song.lyrics
+                response = genius.search_songs(f"{title} {artist}")
+                hits = (response or {}).get('hits', [])
+                song_url = hits[0]['result']['url'] if hits else None
+                lyrics = genius.lyrics(song_url=song_url, remove_section_headers=True) if song_url else None
+                if lyrics:
                     source = "genius"
                     total_fetched += 1
                     log.info("  ✓ %s — %s (lyrics_len=%d)", artist, title, len(lyrics))
                     print(f"  ✓ {artist} — {title}")
                 else:
                     total_not_found += 1
-                    log.debug("  ✗ Not found: %s — %s (song=%r)", artist, title, song)
+                    log.debug("  ✗ Not found: %s — %s (hits=%d)", artist, title, len(hits))
                     print(f"  ✗ Not found: {artist} — {title}")
             except Exception as ex:
                 if "403" in str(ex):
