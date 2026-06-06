@@ -107,10 +107,12 @@ header.container-fluid .version-badge {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-bottom: 1rem;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
 }
 
 .tag-pill {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 400;
   padding: 0.2rem 0.65rem;
   border-radius: 6px;
@@ -139,7 +141,7 @@ header.container-fluid .version-badge {
 
 /* Reset filters button */
 .reset-filters-btn {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 400;
   padding: 0.2rem 0.65rem;
   margin: 0;
@@ -254,17 +256,21 @@ nav > ul:last-child details.dropdown > ul {
 }
 
 header.container-fluid nav details.dropdown > summary {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 header.container-fluid nav details.dropdown > ul li a {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .modal-actions button {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 700;
+}
+
+#modal-summary {
+  font-size: 0.8rem;
 }
 
 /* Content toolbar */
