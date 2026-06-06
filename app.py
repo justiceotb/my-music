@@ -244,8 +244,13 @@ def api_enrich():
 @app.route("/api/fetch-lyrics", methods=["POST"])
 def api_fetch_lyrics():
     job_id = "fetch_lyrics"
-    batch = str(request.json.get("batch", 50)) if request.is_json else "50"
-    _start_job(job_id, [sys.executable, "fetch_lyrics_synced.py", "--db", DB_PATH, "--batch", batch])
+    data = request.json or {}
+    batch = str(data.get("batch", 50))
+    retry_all = data.get("retry_all", False)
+    cmd = [sys.executable, "fetch_lyrics_synced.py", "--db", DB_PATH, "--batch", batch]
+    if retry_all:
+        cmd.append("--retry-all")
+    _start_job(job_id, cmd)
     return jsonify({"job_id": job_id})
 
 

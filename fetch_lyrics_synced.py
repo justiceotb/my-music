@@ -70,7 +70,7 @@ def fetch_one(artist: str, title: str, providers: list[str] | None = None) -> No
         print(f"  ✗ Not found: {artist} - {title}")
 
 
-def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = None) -> None:
+def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = None, retry_all: bool = False) -> None:
     init_db(db_path)
     conn = get_connection(db_path)
 
@@ -78,13 +78,14 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
     total_not_found = 0
     total_errors = 0
 
+    where_clause = "" if retry_all else "WHERE t.lyrics_fetched_at IS NULL"
     while True:
         rows = conn.execute(
-            """
+            f"""
             SELECT t.id, t.title, t.artists, a.artists_sort
             FROM tracks t
             JOIN albums a ON a.discogs_id = t.album_id
-            WHERE t.lyrics_fetched_at IS NULL
+            {where_clause}
             LIMIT ?
             """,
             (batch_size,),
@@ -158,6 +159,8 @@ def main() -> None:
     parser.add_argument(
         "--batch", type=int, default=50, help="Tracks per commit batch (default 50)"
     )
+    parser.add_argument("--retry-all", action="store_true",
+                        help="Re-fetch lyrics even for tracks already attempted")
     parser.add_argument("--artist", default=None, help="Artist name for ad-hoc lookup (requires --title)")
     parser.add_argument("--title", default=None, help="Song title for ad-hoc lookup (requires --artist)")
     parser.add_argument(
@@ -176,7 +179,7 @@ def main() -> None:
     if args.artist and args.title:
         fetch_one(args.artist, args.title, args.providers)
     else:
-        fetch_lyrics(args.db, args.batch, args.providers)
+        fetch_lyrics(args.db, args.batch, args.providers, retry_all=args.retry_all)
 
 
 if __name__ == "__main__":

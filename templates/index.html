@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Music Meaning</title>
+  <title>My Music Means</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
   <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body>
   <header class="container-fluid">
     <nav>
-      <ul><li><strong>My Music Meaning</strong></li></ul>
+      <ul><li><strong>My Music Means</strong></li></ul>
       <ul>
         <li id="stats-display" class="stats-text"></li>
         <li><small class="version-badge">v{{ version }}</small></li>
@@ -20,7 +20,8 @@
             <ul>
               <li><a href="#" id="btn-sync">Sync Discogs</a></li>
               <li><a href="#" id="btn-enrich">Enrich missing data from Discogs</a></li>
-              <li><a href="#" id="btn-lyrics">Fetch missing lyrics</a></li>
+              <li><a href="#" id="btn-lyrics-new">Fetch lyrics for new songs</a></li>
+              <li><a href="#" id="btn-lyrics-all">Fetch lyrics for all (retry)</a></li>
               <li><a href="#" id="btn-summarise-ollama">Summarise - Ollama (local)</a></li>
               <li><a href="#" id="btn-summarise-claude">Summarise - With Claude</a></li>
             </ul>

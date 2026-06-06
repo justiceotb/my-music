@@ -48,6 +48,7 @@ header.container-fluid .version-badge {
 
 /* Search */
 #search {
+  font-size: 0.875rem;
   margin-bottom: 0.75rem;
 }
 
