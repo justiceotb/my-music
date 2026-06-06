@@ -367,6 +367,124 @@ def api_debug_health():
     return jsonify(data)
 
 
+@app.route("/api/tags/suggest-merges", methods=["POST"])
+def api_suggest_tag_merges():
+    """Ask the local AI to find near-duplicate tags and suggest merges."""
+    data = request.json or {}
+    model_type = data.get("model_type", "ollama")
+
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        "SELECT theme_tags FROM tracks WHERE theme_tags IS NOT NULL AND theme_tags != ''"
+    ).fetchall()
+    conn.close()
+
+    counts: dict[str, int] = {}
+    for row in rows:
+        try:
+            for tag in json.loads(row["theme_tags"]):
+                counts[tag] = counts.get(tag, 0) + 1
+        except Exception:
+            pass
+
+    if len(counts) < 2:
+        return jsonify({"suggestions": []})
+
+    tag_list = "\n".join(
+        f"  {tag} ({count})"
+        for tag, count in sorted(counts.items(), key=lambda x: -x[1])
+    )
+
+    prompt = (
+        "You are a tag deduplication assistant for a music collection app.\n"
+        "Here is a list of theme tags with their usage counts:\n\n"
+        f"{tag_list}\n\n"
+        "Identify tags that are near-duplicates: plurals of the same word, synonyms, or minor spelling variants.\n"
+        'Return a JSON array of merge suggestions, each with:\n'
+        '  {"keep": "the canonical form to keep", "remove": "the duplicate to eliminate", "reason": "brief explanation"}\n'
+        "Only suggest high-confidence merges. Do not suggest merges for conceptually distinct tags.\n"
+        "Respond ONLY with a valid JSON array. No markdown, no extra text."
+    )
+
+    try:
+        if model_type == "claude":
+            import anthropic
+            key = os.environ.get("ANTHROPIC_API_KEY")
+            if not key:
+                return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
+            client = anthropic.Anthropic(api_key=key)
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.content[0].text.strip()
+        else:
+            from openai import OpenAI as _OpenAI
+            ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+            ollama_model = os.environ.get("OLLAMA_MODEL", "llama3")
+            client = _OpenAI(base_url=f"{ollama_host}/v1", api_key="ollama")
+            response = client.chat.completions.create(
+                model=ollama_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+            )
+            raw = response.choices[0].message.content.strip()
+
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+            raw = raw.rsplit("```", 1)[0]
+
+        suggestions = json.loads(raw.strip())
+        return jsonify({"suggestions": suggestions})
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), 500
+
+
+@app.route("/api/tags/merge", methods=["POST"])
+def api_merge_tags():
+    """Replace all occurrences of one tag with another across all tracks."""
+    data = request.json or {}
+    keep = (data.get("keep") or "").strip()
+    remove = (data.get("remove") or "").strip()
+    if not keep or not remove:
+        return jsonify({"error": "keep and remove are required"}), 400
+    if keep == remove:
+        return jsonify({"error": "keep and remove must differ"}), 400
+
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        "SELECT id, theme_tags FROM tracks WHERE theme_tags LIKE ?",
+        (f'%"{remove}"%',),
+    ).fetchall()
+
+    merged_count = 0
+    for row in rows:
+        try:
+            tags = json.loads(row["theme_tags"])
+        except Exception:
+            continue
+        if remove not in tags:
+            continue
+        new_tags = [keep if t == remove else t for t in tags]
+        # deduplicate while preserving order
+        seen: set[str] = set()
+        deduped = []
+        for t in new_tags:
+            if t not in seen:
+                seen.add(t)
+                deduped.append(t)
+        conn.execute(
+            "UPDATE tracks SET theme_tags = ? WHERE id = ?",
+            (json.dumps(deduped), row["id"]),
+        )
+        merged_count += 1
+
+    conn.commit()
+    conn.close()
+    return jsonify({"merged_count": merged_count, "keep": keep, "remove": remove})
+
+
 @app.route("/api/debug/reset-stuck", methods=["POST"])
 def api_debug_reset_stuck():
     conn = get_connection(DB_PATH)

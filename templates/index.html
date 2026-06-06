@@ -106,7 +106,24 @@
 
         </div>
       </section>
+
+      <section class="debug-section" id="debug-tag-merge">
+        <h3>Tag Review &amp; Merge</h3>
+        <p class="muted">Uses the local AI to find near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them.</p>
+        <div class="debug-actions-row">
+          <button id="btn-suggest-merges" class="outline">Suggest merges</button>
+          <select id="tag-merge-model" style="width:auto;margin:0;font-size:0.85rem">
+            <option value="ollama">Ollama</option>
+            <option value="claude">Claude</option>
+          </select>
+        </div>
+        <div id="tag-merge-results"></div>
+      </section>
     </div>
+
+    <button id="sidebar-toggle" class="sidebar-toggle outline secondary" aria-expanded="false">
+      Filters <span class="sidebar-toggle-arrow">▾</span>
+    </button>
 
     <div class="layout">
 

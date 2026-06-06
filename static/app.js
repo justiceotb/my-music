@@ -605,6 +605,104 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+// ── Sidebar toggle (mobile) ───────────────────
+
+const sidebarToggle = el("sidebar-toggle");
+if (sidebarToggle) {
+  sidebarToggle.addEventListener("click", () => {
+    const aside = document.querySelector("aside");
+    const open = aside.classList.toggle("sidebar-open");
+    sidebarToggle.setAttribute("aria-expanded", String(open));
+  });
+}
+
+// ── Tag merge ─────────────────────────────────
+
+el("btn-suggest-merges").addEventListener("click", async () => {
+  const btn = el("btn-suggest-merges");
+  const resultsEl = el("tag-merge-results");
+  const model = el("tag-merge-model").value;
+
+  btn.setAttribute("aria-busy", "true");
+  btn.disabled = true;
+  resultsEl.innerHTML = "<p class='muted'>Asking AI to analyse tags…</p>";
+
+  try {
+    const data = await apiFetch("/api/tags/suggest-merges", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_type: model }),
+    });
+
+    if (data.error) {
+      resultsEl.innerHTML = `<p style="color:var(--pico-color-red-500,#ef4444)">${escHtml(data.error)}</p>`;
+      return;
+    }
+
+    const suggestions = data.suggestions || [];
+    if (!suggestions.length) {
+      resultsEl.innerHTML = "<p class='muted'>No near-duplicate tags found.</p>";
+      return;
+    }
+
+    resultsEl.innerHTML = "";
+    const list = document.createElement("div");
+    list.className = "tag-merge-list";
+
+    suggestions.forEach(s => {
+      const row = document.createElement("div");
+      row.className = "tag-merge-row";
+      row.innerHTML = `
+        <div class="tag-merge-info">
+          <span class="tag-pill">${escHtml(s.remove)}</span>
+          <span class="tag-merge-arrow">→</span>
+          <span class="tag-pill">${escHtml(s.keep)}</span>
+          <span class="tag-merge-reason">${escHtml(s.reason)}</span>
+        </div>
+        <div class="tag-merge-actions">
+          <button class="outline btn-do-merge" style="font-size:0.8rem;padding:0.2rem 0.6rem;margin:0">Merge</button>
+          <button class="outline secondary btn-skip-merge" style="font-size:0.8rem;padding:0.2rem 0.6rem;margin:0">Skip</button>
+        </div>
+      `;
+
+      row.querySelector(".btn-do-merge").addEventListener("click", async () => {
+        const mergeBtn = row.querySelector(".btn-do-merge");
+        mergeBtn.setAttribute("aria-busy", "true");
+        mergeBtn.disabled = true;
+        try {
+          const result = await apiFetch("/api/tags/merge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ keep: s.keep, remove: s.remove }),
+          });
+          row.innerHTML = `<span class="muted">✓ Merged "${escHtml(s.remove)}" → "${escHtml(s.keep)}" (${result.merged_count} track(s) updated)</span>`;
+          loadTags();
+        } catch (err) {
+          mergeBtn.removeAttribute("aria-busy");
+          mergeBtn.disabled = false;
+          row.querySelector(".tag-merge-reason").textContent = `Error: ${err.message}`;
+        }
+      });
+
+      row.querySelector(".btn-skip-merge").addEventListener("click", () => {
+        row.remove();
+        if (!list.querySelector(".tag-merge-row")) {
+          resultsEl.innerHTML = "<p class='muted'>All suggestions reviewed.</p>";
+        }
+      });
+
+      list.appendChild(row);
+    });
+
+    resultsEl.appendChild(list);
+  } catch (err) {
+    resultsEl.innerHTML = `<p style="color:var(--pico-color-red-500,#ef4444)">Error: ${escHtml(err.message)}</p>`;
+  } finally {
+    btn.removeAttribute("aria-busy");
+    btn.disabled = false;
+  }
+});
+
 // ── Init ──────────────────────────────────────
 
 (async () => {

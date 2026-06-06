@@ -6,16 +6,45 @@
   align-items: start;
 }
 
+/* Sidebar toggle - hidden on desktop, shown on mobile */
+.sidebar-toggle {
+  display: none !important;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-toggle-arrow {
+  transition: transform 0.2s;
+}
+
+.sidebar-toggle[aria-expanded="true"] .sidebar-toggle-arrow {
+  transform: rotate(180deg);
+}
+
 @media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr;
   }
   aside {
     position: static !important;
+    display: none;
+  }
+  aside.sidebar-open {
+    display: block;
+  }
+  .sidebar-toggle {
+    display: flex !important;
   }
   nav details.dropdown > summary {
     white-space: nowrap;
-    overflow: visible;
+    overflow: hidden;
+    max-width: 100%;
+  }
+  nav details.dropdown {
+    max-width: 100%;
+    overflow: hidden;
   }
 }
 
@@ -540,6 +569,48 @@ header.container-fluid nav details.dropdown > ul li a {
   padding: 0.25rem 0.9rem;
   font-size: 0.82rem;
   width: 100%;
+}
+
+/* Tag merge tool */
+.tag-merge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tag-merge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.tag-merge-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-merge-arrow {
+  color: var(--pico-muted-color);
+  font-style: normal;
+}
+
+.tag-merge-reason {
+  font-size: 0.78rem;
+  color: var(--pico-muted-color);
+}
+
+.tag-merge-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 .hidden { display: none !important; }
