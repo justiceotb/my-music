@@ -122,6 +122,15 @@ ANTHROPIC_API_KEY=sk-ant-... python summarise.py --model-type claude
 python summarise.py --batch 20 --db music.db
 ```
 
+### `enrich_discogs.py`
+
+Back-fills missing album fields (`artists_sort`, `year`, `styles`, `format`) for albums already in the DB. Queries each album's Discogs release page and writes any newly found data. Falls back to building the artist name from the `artists` list when `artists_sort` is absent — which covers a large number of releases where Discogs only populates individual artist objects, not the sort field.
+
+```bash
+python enrich_discogs.py --token TOKEN [--db music.db]
+# or: DISCOGS_TOKEN=... python enrich_discogs.py
+```
+
 ### `all-songs.py` (original)
 
 Exports your Discogs collection to an Excel spreadsheet.
