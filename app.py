@@ -148,6 +148,7 @@ def api_tracks():
         "artist": "a.artists_sort COLLATE NOCASE, a.year, t.id",
         "album":  "a.title COLLATE NOCASE, t.id",
         "year":   "a.year, a.artists_sort COLLATE NOCASE, t.id",
+        "song":   "t.title COLLATE NOCASE, a.artists_sort COLLATE NOCASE",
     }.get(sort, "a.artists_sort COLLATE NOCASE, a.year, t.id")
 
     total = conn.execute(
@@ -244,7 +245,7 @@ def api_enrich():
 def api_fetch_lyrics():
     job_id = "fetch_lyrics"
     batch = str(request.json.get("batch", 50)) if request.is_json else "50"
-    _start_job(job_id, [sys.executable, "fetch_lyrics.py", "--db", DB_PATH, "--batch", batch])
+    _start_job(job_id, [sys.executable, "fetch_lyrics_synced.py", "--db", DB_PATH, "--batch", batch])
     return jsonify({"job_id": job_id})
 
 
