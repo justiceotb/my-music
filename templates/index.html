@@ -25,8 +25,7 @@
               <li><a href="#" id="btn-enrich">Enrich missing data from Discogs</a></li>
               <li><a href="#" id="btn-lyrics-new">Fetch lyrics for new songs</a></li>
               <li><a href="#" id="btn-lyrics-all">Fetch lyrics for all (retry)</a></li>
-              <li><a href="#" id="btn-summarise-ollama">Summarise - Ollama (local)</a></li>
-              <li><a href="#" id="btn-summarise-claude">Summarise - With Claude</a></li>
+              <li><a href="#" id="btn-summarise-ollama">Summarise</a></li>
             </ul>
           </details>
         </li>
@@ -72,12 +71,6 @@
             <h4>Summarise — Ollama</h4>
             <p>Run thematic summarisation for all unsummarised tracks with lyrics.</p>
             <button class="outline" id="dbg-btn-summarise-ollama">Run</button>
-          </article>
-
-          <article class="debug-script-card">
-            <h4>Summarise — Claude</h4>
-            <p>Same as above using Claude via Anthropic API.</p>
-            <button class="outline" id="dbg-btn-summarise-claude">Run</button>
           </article>
 
           <article class="debug-script-card">
@@ -184,8 +177,7 @@
       </details>
       <footer class="modal-actions">
         <button id="modal-btn-lyrics" class="outline secondary">Fetch Lyrics</button>
-        <button id="modal-btn-summarise-ollama" class="outline secondary">Summarise (Ollama)</button>
-        <button id="modal-btn-summarise-claude" class="outline secondary">Summarise (Claude)</button>
+        <button id="modal-btn-summarise-ollama" class="outline secondary">Summarise</button>
       </footer>
     </article>
   </dialog>

@@ -264,16 +264,6 @@ el("modal-btn-summarise-ollama").addEventListener("click", () => {
   }));
 });
 
-el("modal-btn-summarise-claude").addEventListener("click", () => {
-  if (!currentModalTrackId) return;
-  el("track-modal").close();
-  const jobId = `summarise_${currentModalTrackId}`;
-  startJob(jobId, () => apiFetch(`/api/summarise/${currentModalTrackId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model_type: "claude" }),
-  }));
-});
 
 // ── Search ────────────────────────────────────
 
@@ -389,14 +379,6 @@ el("btn-summarise-ollama").addEventListener("click", e => {
   }));
 });
 
-el("btn-summarise-claude").addEventListener("click", e => {
-  e.preventDefault();
-  startJob("summarise", () => apiFetch("/api/summarise", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model_type: "claude", batch: 20 }),
-  }));
-});
 
 // ── Job polling ───────────────────────────────
 
@@ -538,13 +520,6 @@ el("dbg-btn-summarise-ollama").addEventListener("click", () => {
   }));
 });
 
-el("dbg-btn-summarise-claude").addEventListener("click", () => {
-  startJob("summarise", () => apiFetch("/api/summarise", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model_type: "claude", batch: 20 }),
-  }));
-});
 
 el("dbg-btn-lyrics-new").addEventListener("click", () => {
   startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
