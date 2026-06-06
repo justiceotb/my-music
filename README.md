@@ -154,6 +154,9 @@ Fetches lyrics from Genius for all tracks where `lyrics_fetched_at IS NULL`. Com
 ```bash
 python fetch_lyrics.py --genius-token TOKEN [--batch 50] [--db music.db]
 # or: GENIUS_TOKEN=... python fetch_lyrics.py
+
+# Ad-hoc lookup — no DB required, prints lyrics to stdout:
+python fetch_lyrics.py --genius-token TOKEN --artist "Pink Floyd" --title "Comfortably Numb"
 ```
 
 ### `summarise.py`
