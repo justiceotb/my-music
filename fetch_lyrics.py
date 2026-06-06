@@ -80,6 +80,12 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
                     total_not_found += 1
                     print(f"  ✗ Not found: {artist} — {title}")
             except Exception as ex:
+                if "403" in str(ex):
+                    print(f"  ! 403 Forbidden — rate-limited or bad token. Stopping run (track left unprocessed): {artist} — {title}")
+                    conn.commit()
+                    conn.close()
+                    print(f"\nAborted. Found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}")
+                    return
                 source = "error"
                 total_errors += 1
                 print(f"  ! Error for {artist} — {title}: {ex}")

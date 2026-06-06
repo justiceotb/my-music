@@ -5,7 +5,8 @@ const state = {
   albumId: null,
   tag: null,
   page: 1,
-  sort: "artist",
+  trackSort: "artist",
+  albumSort: "artist",
 };
 
 let jobPollTimer = null;
@@ -39,7 +40,7 @@ async function loadStats() {
 // ── Albums sidebar ────────────────────────────
 
 async function loadAlbums() {
-  const albums = await apiFetch(`/api/albums?sort=${state.sort}`);
+  const albums = await apiFetch(`/api/albums?sort=${state.albumSort}`);
   const ul = el("albums");
   ul.innerHTML = '<li data-id="" class="active">All albums</li>';
   albums.forEach(a => {
@@ -92,7 +93,7 @@ async function loadTags() {
 // ── Tracks ────────────────────────────────────
 
 async function loadTracks() {
-  const params = new URLSearchParams({ page: state.page, sort: state.sort });
+  const params = new URLSearchParams({ page: state.page, sort: state.trackSort });
   if (state.q)       params.set("q", state.q);
   if (state.albumId) params.set("album_id", state.albumId);
   if (state.tag)     params.set("tag", state.tag);
@@ -236,10 +237,14 @@ el("search").addEventListener("input", debounce(e => {
 // ── Sort ──────────────────────────────────────
 
 el("sort-select").addEventListener("change", e => {
-  state.sort = e.target.value;
+  state.trackSort = e.target.value;
   state.page = 1;
-  loadAlbums();
   loadTracks();
+});
+
+el("album-sort-select").addEventListener("change", e => {
+  state.albumSort = e.target.value;
+  loadAlbums();
 });
 
 // ── Actions ───────────────────────────────────
