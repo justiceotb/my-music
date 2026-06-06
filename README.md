@@ -17,7 +17,7 @@ my-music/
 ├── all-songs.py          # Original Discogs → Excel exporter (unchanged)
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
-├── fetch_lyrics.py       # lyrics.ovh lyrics fetcher
+├── fetch_lyrics_ovh.py   # lyrics.ovh lyrics fetcher
 ├── fetch_lyrics_genius.py  # Genius lyrics fetcher (search_songs + lyrics() API)
 ├── fetch_lyrics_synced.py  # syncedlyrics fetcher - multi-provider, no token required
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
@@ -100,7 +100,7 @@ pip install -r requirements.txt
 python import_discogs.py --token YOUR_DISCOGS_TOKEN
 
 # 2. Fetch lyrics (no token required)
-python fetch_lyrics.py
+python fetch_lyrics_synced.py
 
 # 3. Summarise tracks that have lyrics (needs Ollama running locally)
 python summarise.py
@@ -147,15 +147,15 @@ python import_discogs.py --token TOKEN [--db music.db]
 # or: DISCOGS_TOKEN=... python import_discogs.py
 ```
 
-### `fetch_lyrics.py`
+### `fetch_lyrics_ovh.py`
 
 Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for all tracks where `lyrics_fetched_at IS NULL`. No API token required. Commits after every batch - fully resumable if interrupted.
 
 ```bash
-python fetch_lyrics.py [--batch 50] [--db music.db]
+python fetch_lyrics_ovh.py [--batch 50] [--db music.db]
 
 # Ad-hoc lookup - no DB required, prints lyrics to stdout:
-python fetch_lyrics.py --artist "Pink Floyd" --title "Comfortably Numb"
+python fetch_lyrics_ovh.py --artist "Pink Floyd" --title "Comfortably Numb"
 ```
 
 ### `summarise.py`
@@ -202,7 +202,7 @@ Open `http://localhost:5000` after starting the app.
 - **Track modal** - click any card to see full lyrics and summary
 - **Actions menu** - Sync Discogs, Fetch missing lyrics, Summarise - Ollama (local), Summarise - With Claude; live output streams into a scrollable banner so you can see exactly what's happening; a **Stop** button terminates the running job mid-flight, and a **Dismiss** button clears the banner when done
 - **Album sort** - sort the albums sidebar independently (Artist / Album / Year)
-- **Track sort** - sort the track listing independently (Artist / Album)
+- **Track sort** - sort the track listing independently (Artist / Album / Song)
 
 ## Cloudflare Tunnel (optional external access)
 
@@ -219,7 +219,7 @@ Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to
 
 All background job output (Discogs sync, lyrics fetch, summarise) is teed to the container's stdout so it appears in Portainer's log view in real time. Log lines are prefixed with the job ID, e.g. `[lyrics] 2026-01-01T00:00:00Z [DEBUG] …`.
 
-`fetch_lyrics.py` uses Python's `logging` module at DEBUG level, so you'll see:
+`fetch_lyrics_ovh.py` uses Python's `logging` module at DEBUG level, so you'll see:
 - Per-track lyrics.ovh query attempts with artist/title
 - HTTP error context for failed requests
 - Batch commit summaries
