@@ -8,7 +8,9 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Fetches lyrics via syncedlyrics (lrclib, netease) for every track — no API token required; lrclib timeout increased to 30s
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by artist, album, title, lyrics, or theme tag; click any track for full lyrics and summary; one-click Summarise button in track detail modal
+- Mobile-friendly sidebar: collapses behind a "Filters ▾" toggle on small screens so song results are immediately visible; sidebar toggle hidden on desktop
 - Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
+- Tag Review & Merge tool in Debug view: asks the local AI (Ollama or Claude) to identify near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them in one click
 - Filter chips (Has lyrics, No lyrics, Tagged) with a Reset filters button to clear all active selections
 - Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
 - Song list shows current page and total pages with First/Last/±10 jump buttons
