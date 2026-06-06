@@ -66,9 +66,15 @@ def index():
 
 @app.route("/api/albums")
 def api_albums():
+    sort = request.args.get("sort", "artist")
+    order = {
+        "artist": "artists_sort COLLATE NOCASE, year",
+        "album":  "title COLLATE NOCASE",
+        "year":   "year, artists_sort COLLATE NOCASE",
+    }.get(sort, "artists_sort COLLATE NOCASE, year")
     conn = get_connection(DB_PATH)
     rows = conn.execute(
-        "SELECT discogs_id, title, year, artists_sort FROM albums ORDER BY artists_sort, year"
+        f"SELECT discogs_id, title, year, artists_sort FROM albums ORDER BY {order}"
     ).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
@@ -97,6 +103,7 @@ def api_tracks():
     q = (request.args.get("q") or "").strip()
     tag = (request.args.get("tag") or "").strip()
     page = request.args.get("page", 1, type=int)
+    sort = request.args.get("sort", "artist")
     per_page = 50
 
     conn = get_connection(DB_PATH)
@@ -122,8 +129,14 @@ def api_tracks():
 
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
+    track_order = {
+        "artist": "a.artists_sort COLLATE NOCASE, a.year, t.id",
+        "album":  "a.title COLLATE NOCASE, t.id",
+        "year":   "a.year, a.artists_sort COLLATE NOCASE, t.id",
+    }.get(sort, "a.artists_sort COLLATE NOCASE, a.year, t.id")
+
     total = conn.execute(
-        f"SELECT COUNT(*) FROM tracks t {where}", params
+        f"SELECT COUNT(*) FROM tracks t JOIN albums a ON a.discogs_id = t.album_id {where}", params
     ).fetchone()[0]
 
     rows = conn.execute(
@@ -135,7 +148,7 @@ def api_tracks():
         FROM tracks t
         JOIN albums a ON a.discogs_id = t.album_id
         {where}
-        ORDER BY a.artists_sort, a.year, t.id
+        ORDER BY {track_order}
         LIMIT ? OFFSET ?
         """,
         params + [per_page, (page - 1) * per_page],
@@ -199,6 +212,16 @@ def api_sync():
         return jsonify({"error": "DISCOGS_TOKEN not set"}), 400
     job_id = "sync"
     _start_job(job_id, [sys.executable, "import_discogs.py", "--token", token, "--db", DB_PATH])
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/enrich", methods=["POST"])
+def api_enrich():
+    token = os.environ.get("DISCOGS_TOKEN")
+    if not token:
+        return jsonify({"error": "DISCOGS_TOKEN not set"}), 400
+    job_id = "enrich"
+    _start_job(job_id, [sys.executable, "enrich_discogs.py", "--token", token, "--db", DB_PATH])
     return jsonify({"job_id": job_id})
 
 

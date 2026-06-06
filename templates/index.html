@@ -19,6 +19,7 @@
             <summary role="button" class="secondary outline">Actions</summary>
             <ul>
               <li><a href="#" id="btn-sync">Sync Discogs</a></li>
+              <li><a href="#" id="btn-enrich">Enrich missing data from Discogs</a></li>
               <li><a href="#" id="btn-lyrics">Fetch missing lyrics</a></li>
               <li>
                 <details>
@@ -42,6 +43,7 @@
       <span id="job-message"></span>
       <button id="job-dismiss" class="secondary outline" style="margin:0;padding:0.2rem 0.75rem;font-size:0.8rem">Dismiss</button>
     </div>
+    <div id="job-current-step" class="job-current-step"></div>
     <pre id="job-output" class="job-output"></pre>
   </div>
 
@@ -65,7 +67,17 @@
 
       <!-- Track list -->
       <section id="content">
-        <div id="result-info"></div>
+        <div class="content-toolbar">
+          <div id="result-info"></div>
+          <label class="sort-label">
+            Sort:
+            <select id="sort-select">
+              <option value="artist">Artist</option>
+              <option value="album">Album</option>
+              <option value="year">Year</option>
+            </select>
+          </label>
+        </div>
         <div id="tracks"></div>
         <div id="pagination"></div>
       </section>
@@ -80,6 +92,7 @@
         <button aria-label="Close" rel="prev" id="modal-close"></button>
         <h3 id="modal-title"></h3>
         <p id="modal-meta" class="secondary"></p>
+        <a id="modal-discogs-link" href="#" target="_blank" rel="noopener" class="discogs-link hidden">View on Discogs ↗</a>
       </header>
       <div id="modal-tags"></div>
       <p id="modal-summary"></p>

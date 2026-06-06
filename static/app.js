@@ -5,6 +5,7 @@ const state = {
   albumId: null,
   tag: null,
   page: 1,
+  sort: "artist",
 };
 
 let jobPollTimer = null;
@@ -37,13 +38,14 @@ async function loadStats() {
 // ── Albums sidebar ────────────────────────────
 
 async function loadAlbums() {
-  const albums = await apiFetch("/api/albums");
+  const albums = await apiFetch(`/api/albums?sort=${state.sort}`);
   const ul = el("albums");
   ul.innerHTML = '<li data-id="" class="active">All albums</li>';
   albums.forEach(a => {
     const li = document.createElement("li");
     li.dataset.id = a.discogs_id;
-    li.textContent = `${a.artists_sort || ""} — ${a.title} (${a.year || "?"})`;
+    const artist = a.artists_sort ? `${a.artists_sort} — ` : "";
+    li.textContent = `${artist}${a.title} (${a.year || "?"})`;
     ul.appendChild(li);
   });
   ul.addEventListener("click", e => {
@@ -89,7 +91,7 @@ async function loadTags() {
 // ── Tracks ────────────────────────────────────
 
 async function loadTracks() {
-  const params = new URLSearchParams({ page: state.page });
+  const params = new URLSearchParams({ page: state.page, sort: state.sort });
   if (state.q)       params.set("q", state.q);
   if (state.albumId) params.set("album_id", state.albumId);
   if (state.tag)     params.set("tag", state.tag);
@@ -199,6 +201,14 @@ async function openModal(trackId) {
   el("modal-meta").textContent =
     `${t.artists_sort || t.artists || ""} — ${t.album} (${t.year || "?"})`;
 
+  const link = el("modal-discogs-link");
+  if (t.album_id) {
+    link.href = `https://www.discogs.com/release/${t.album_id}`;
+    link.classList.remove("hidden");
+  } else {
+    link.classList.add("hidden");
+  }
+
   const tagsArr = t.theme_tags ? JSON.parse(t.theme_tags) : [];
   el("modal-tags").innerHTML = tagsArr
     .map(tag => `<span class="tag-pill">${escHtml(tag)}</span>`)
@@ -222,6 +232,15 @@ el("search").addEventListener("input", debounce(e => {
   loadTracks();
 }, 300));
 
+// ── Sort ──────────────────────────────────────
+
+el("sort-select").addEventListener("change", e => {
+  state.sort = e.target.value;
+  state.page = 1;
+  loadAlbums();
+  loadTracks();
+});
+
 // ── Actions ───────────────────────────────────
 
 function startJob(jobId, fetchFn) {
@@ -234,6 +253,11 @@ function startJob(jobId, fetchFn) {
 el("btn-sync").addEventListener("click", e => {
   e.preventDefault();
   startJob("sync", () => apiFetch("/api/sync", { method: "POST" }));
+});
+
+el("btn-enrich").addEventListener("click", e => {
+  e.preventDefault();
+  startJob("enrich", () => apiFetch("/api/enrich", { method: "POST" }));
 });
 
 el("btn-lyrics").addEventListener("click", e => {
@@ -265,13 +289,17 @@ el("btn-summarise-claude").addEventListener("click", e => {
 
 // ── Job polling ───────────────────────────────
 
-function showJobBanner(msg) {
-  el("job-banner").classList.remove("hidden");
+function showJobBanner(msg, state = "running") {
+  const banner = el("job-banner");
+  banner.classList.remove("hidden", "job-done", "job-error");
+  if (state === "done")  banner.classList.add("job-done");
+  if (state === "error") banner.classList.add("job-error");
   el("job-message").textContent = msg;
 }
 
 function hideJobBanner() {
   el("job-banner").classList.add("hidden");
+  el("job-banner").classList.remove("job-done", "job-error");
   clearInterval(jobPollTimer);
 }
 
@@ -279,6 +307,10 @@ function updateJobOutput(text) {
   const out = el("job-output");
   out.textContent = text || "";
   out.scrollTop = out.scrollHeight;
+
+  // Extract last meaningful line as the current step indicator
+  const lines = (text || "").split("\n").map(l => l.trim()).filter(Boolean);
+  el("job-current-step").textContent = lines.length ? lines[lines.length - 1] : "";
 }
 
 function pollJob(jobId) {
@@ -290,14 +322,17 @@ function pollJob(jobId) {
         showJobBanner("Running…");
         updateJobOutput(job.output);
       } else if (job.status === "done") {
-        hideJobBanner();
+        clearInterval(jobPollTimer);
+        showJobBanner("Complete ✓", "done");
+        updateJobOutput(job.output);
         loadStats();
         loadTracks();
         loadTags();
+        loadAlbums();
       } else if (job.status === "error") {
-        showJobBanner("Job failed");
-        updateJobOutput(job.output || "(no output)");
         clearInterval(jobPollTimer);
+        showJobBanner("Job failed", "error");
+        updateJobOutput(job.output || "(no output)");
       }
     } catch (_) {}
   }, 2000);
