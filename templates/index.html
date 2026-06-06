@@ -114,23 +114,31 @@
       <aside id="sidebar">
         <input type="search" id="search" placeholder="Search artist, album, title, lyrics…" />
 
-        <section id="tag-cloud">
-          <small>Tags</small>
-          <div id="tags"></div>
-        </section>
+        <div class="sidebar-tabs">
+          <div class="sidebar-tab-bar">
+            <button class="sidebar-tab-btn active" data-tab="tags">Tags</button>
+            <button class="sidebar-tab-btn" data-tab="albums">Albums</button>
+          </div>
 
-        <section id="album-list">
-          <small>Albums <span id="album-count"></span></small>
-          <label class="sort-label">
-            Sort:
-            <select id="album-sort-select">
-              <option value="artist">Artist</option>
-              <option value="album">Album</option>
-              <option value="year">Year</option>
-            </select>
-          </label>
-          <ul id="albums"></ul>
-        </section>
+          <div class="sidebar-tab-panel" data-panel="tags">
+            <div id="tags"></div>
+          </div>
+
+          <div class="sidebar-tab-panel hidden" data-panel="albums">
+            <div class="album-list-header">
+              <span id="album-count"></span>
+              <label class="sort-label">
+                Sort:
+                <select id="album-sort-select">
+                  <option value="artist">Artist</option>
+                  <option value="album">Album</option>
+                  <option value="year">Year</option>
+                </select>
+              </label>
+            </div>
+            <ul id="albums"></ul>
+          </div>
+        </div>
       </aside>
 
       <!-- Track list -->
@@ -150,6 +158,7 @@
           <span class="tag-pill filter-chip" data-filter="has_lyrics">Has lyrics</span>
           <span class="tag-pill filter-chip" data-filter="no_lyrics">No lyrics</span>
           <span class="tag-pill filter-chip" data-filter="has_tags">Tagged</span>
+          <button id="btn-reset-filters" class="reset-filters-btn hidden">× Reset filters</button>
         </div>
         <div id="tracks"></div>
         <div id="pagination"></div>
