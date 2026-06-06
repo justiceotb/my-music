@@ -127,9 +127,9 @@ function renderTracks({ tracks, total, page, per_page }) {
         ).join("")
       : "";
 
-    const lyricsBadge = t.lyrics_source === "lyrics_ovh"
+    const lyricsBadge = t.lyrics_source && !["not_found", "error"].includes(t.lyrics_source)
       ? '<span class="badge badge-found">lyrics</span>'
-      : t.lyrics_source === "not_found" || t.lyrics_source === "error"
+      : (t.lyrics_source === "not_found" || t.lyrics_source === "error")
         ? '<span class="badge badge-missing">no lyrics</span>'
         : "";
 
@@ -291,12 +291,21 @@ el("btn-enrich").addEventListener("click", e => {
   startJob("enrich", () => apiFetch("/api/enrich", { method: "POST" }));
 });
 
-el("btn-lyrics").addEventListener("click", e => {
+el("btn-lyrics-new").addEventListener("click", e => {
   e.preventDefault();
   startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ batch: 50 }),
+  }));
+});
+
+el("btn-lyrics-all").addEventListener("click", e => {
+  e.preventDefault();
+  startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch: 50, retry_all: true }),
   }));
 });
 

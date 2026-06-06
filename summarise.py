@@ -16,12 +16,16 @@ Output stored in DB as:
 """
 import argparse
 import json
+import logging
 import os
 import time
 from datetime import datetime, timezone
 
 from db import init_db, get_connection
 from version import __version__
+
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("summarise")
 
 SYSTEM_PROMPT = """You are a music analyst. Given a song's title, artist, album, and lyrics,
 produce a JSON object with exactly two keys:
@@ -124,6 +128,7 @@ def summarise(
             lyrics = row["lyrics"]
 
             try:
+                log.debug("Calling %s for track %d: %s - %s", model_type, track_id, artist, title)
                 if model_type == "ollama":
                     result = call_ollama(client, ollama_model, title, artist, album, lyrics)
                 else:
@@ -131,6 +136,7 @@ def summarise(
 
                 summary = result.get("summary", "")
                 theme_tags = json.dumps(result.get("theme_tags", []))
+                log.debug("Response for track %d: summary_len=%d tags=%s", track_id, len(summary), theme_tags)
 
                 conn.execute(
                     """
@@ -157,6 +163,7 @@ def summarise(
             time.sleep(0.3)
 
         conn.commit()
+        log.debug("Committed batch. ok=%d err=%d", total_ok, total_err)
         print(f"  Batch committed. OK: {total_ok}, errors: {total_err}")
 
     conn.close()
