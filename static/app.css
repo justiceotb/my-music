@@ -1,7 +1,7 @@
 ﻿/* Layout */
 .layout {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 1.5rem;
   align-items: start;
 }
@@ -9,6 +9,12 @@
 @media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+  aside {
+    position: static !important;
+  }
+  nav details.dropdown > summary {
+    white-space: nowrap;
   }
 }
 
@@ -52,16 +58,49 @@ header.container-fluid .version-badge {
   margin-bottom: 0.75rem;
 }
 
+/* Sidebar tabs */
+.sidebar-tabs {
+  margin-top: 0.25rem;
+}
+
+.sidebar-tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid var(--pico-muted-border-color);
+}
+
+.sidebar-tab-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.3rem 0.9rem;
+  margin: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sidebar-tab-btn:hover {
+  color: var(--pico-color);
+  background: transparent;
+}
+
+.sidebar-tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: transparent;
+}
+
+.sidebar-tab-panel {
+  min-height: 0;
+}
+
 /* Tag cloud */
-#tag-cloud {
-  margin-bottom: 0.5rem;
-}
-
-#tag-cloud > small {
-  display: block;
-  margin-bottom: 0.35rem;
-}
-
 #tags {
   display: flex;
   flex-wrap: wrap;
@@ -70,11 +109,12 @@ header.container-fluid .version-badge {
 }
 
 .tag-pill {
-  font-size: 0.72rem;
-  padding: 0.15rem 0.55rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
   border-radius: 6px;
-  background: var(--pico-secondary-background);
-  color: var(--pico-secondary);
+  background: #1e3a5f;
+  color: #93c5fd;
   cursor: pointer;
   border: 1px solid transparent;
   transition: background 0.15s;
@@ -82,9 +122,9 @@ header.container-fluid .version-badge {
 
 .tag-pill:hover,
 .tag-pill.active {
-  background: var(--pico-primary-background);
-  color: var(--pico-primary);
-  border-color: var(--pico-primary);
+  background: #2563eb;
+  color: #fff;
+  border-color: #1d4ed8;
 }
 
 /* Filter chips bar */
@@ -92,36 +132,57 @@ header.container-fluid .version-badge {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+  align-items: center;
   margin-bottom: 0.75rem;
 }
 
+/* Reset filters button */
+.reset-filters-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  margin: 0;
+  border-radius: 6px;
+  border: 1px solid #4b5563;
+  background: transparent;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.reset-filters-btn:hover {
+  background: #374151;
+  color: #f9fafb;
+  border-color: #9ca3af;
+}
+
 /* Album list */
-#album-list {
-  margin-bottom: 0.5rem;
-}
-
-#album-list > small {
-  display: block;
+.album-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
 }
 
-#album-list ul {
+#albums {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 55vh;
+  max-height: 60vh;
   overflow-y: auto;
 }
 
-#album-list li {
+#albums li {
   padding: 0.3rem 0.5rem;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85rem;
 }
 
-#album-list li:hover,
-#album-list li.active {
+#albums li:hover,
+#albums li.active {
   background: var(--pico-primary-background);
   color: var(--pico-primary);
 }

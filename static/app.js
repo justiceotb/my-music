@@ -59,6 +59,7 @@ async function loadAlbums() {
     li.classList.add("active");
     state.albumId = li.dataset.id ? Number(li.dataset.id) : null;
     state.page = 1;
+    updateResetBtn();
     loadTracks();
   });
 }
@@ -85,6 +86,7 @@ async function loadTags() {
           span.classList.add("active");
         }
         state.page = 1;
+        updateResetBtn();
         loadTracks();
       });
       container.appendChild(span);
@@ -163,10 +165,10 @@ function renderTracks({ tracks, total, page, per_page }) {
         e.stopPropagation();
         state.tag = pill.dataset.tag;
         state.page = 1;
-        // Update tag cloud active state
         document.querySelectorAll("#tags .tag-pill").forEach(x => {
           x.classList.toggle("active", x.textContent.startsWith(state.tag));
         });
+        updateResetBtn();
         loadTracks();
       });
     });
@@ -281,7 +283,22 @@ el("search").addEventListener("input", debounce(e => {
   loadTracks();
 }, 300));
 
+// ── Sidebar tabs ──────────────────────────────
+
+document.querySelectorAll(".sidebar-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll(".sidebar-tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+    document.querySelectorAll(".sidebar-tab-panel").forEach(p => p.classList.toggle("hidden", p.dataset.panel !== tab));
+  });
+});
+
 // ── Filter chips ─────────────────────────────
+
+function updateResetBtn() {
+  const active = state.filter || state.tag || state.albumId;
+  el("btn-reset-filters").classList.toggle("hidden", !active);
+}
 
 document.querySelectorAll(".filter-chip").forEach(chip => {
   chip.addEventListener("click", () => {
@@ -295,8 +312,21 @@ document.querySelectorAll(".filter-chip").forEach(chip => {
       chip.classList.add("active");
     }
     state.page = 1;
+    updateResetBtn();
     loadTracks();
   });
+});
+
+el("btn-reset-filters").addEventListener("click", () => {
+  state.filter = null;
+  state.tag = null;
+  state.albumId = null;
+  state.page = 1;
+  document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll("#tags .tag-pill").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll("#albums li").forEach(li => li.classList.toggle("active", li.dataset.id === ""));
+  updateResetBtn();
+  loadTracks();
 });
 
 // ── Sort ──────────────────────────────────────
