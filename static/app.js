@@ -263,6 +263,13 @@ async function openModal(trackId) {
     .join("");
 
   el("modal-summary").textContent = t.summary || "(No summary yet)";
+  const casualEl = el("modal-casual");
+  if (t.summary_casual) {
+    casualEl.textContent = `"${t.summary_casual}"`;
+    casualEl.style.display = "";
+  } else {
+    casualEl.style.display = "none";
+  }
   el("modal-lyrics").textContent = t.lyrics || "(No lyrics yet)";
   el("track-modal").showModal();
 }

@@ -165,7 +165,12 @@ python fetch_lyrics_ovh.py --artist "Pink Floyd" --title "Comfortably Numb"
 
 ### `summarise.py`
 
-Generates a thematic summary and tag list for every track that has lyrics but no AI summary yet. Resumable. Commits each track immediately after write (not end-of-batch), and strips markdown fences from model responses that ignore the JSON-only instruction.
+Generates a thematic summary, tag list, and casual one-liner for every track that has lyrics but no AI summary yet. Resumable. Commits each track immediately after write (not end-of-batch), and strips markdown fences from model responses that ignore the JSON-only instruction.
+
+Each track gets three AI-generated fields:
+- `summary` — 3–5 sentence thematic analysis
+- `theme_tags` — list of short tag strings
+- `summary_casual` — one sentence how an 18-year-old would describe the song to a friend
 
 ```bash
 # Ollama (default)
@@ -176,6 +181,9 @@ ANTHROPIC_API_KEY=sk-ant-... python summarise.py --model-type claude
 
 # Options
 python summarise.py --batch 20 --db music.db
+
+# Backfill casual line for tracks that already have a summary
+python summarise.py --backfill-casual
 ```
 
 ### `enrich_discogs.py`
