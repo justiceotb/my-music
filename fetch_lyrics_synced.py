@@ -173,12 +173,12 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
                 """,
                 (lyrics, source, now_iso(), track_id),
             )
+            conn.commit()
 
             time.sleep(0.5)
 
-        conn.commit()
         print(
-            f"  Batch committed. Running totals - "
+            f"  Batch done. Running totals - "
             f"found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}",
             flush=True,
         )
