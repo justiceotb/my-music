@@ -25,9 +25,9 @@
       retries: 3
       start_period: 10s
 
-  # Optional: Cloudflare Tunnel for external HTTPS access.
+  # Cloudflare Tunnel for external HTTPS access.
   # Set TUNNEL_TOKEN in your .env file (from the Cloudflare Zero Trust dashboard).
-  # Comment out this service if you don't need external access.
+  # Starts automatically when TUNNEL_TOKEN is set.
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run
@@ -36,5 +36,3 @@
     restart: unless-stopped
     depends_on:
       - music-ui
-    profiles:
-      - tunnel
