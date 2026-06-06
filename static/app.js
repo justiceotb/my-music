@@ -357,6 +357,7 @@ function pollJob(jobId) {
       if (job.status === "running") {
         showJobBanner("Running…");
         updateJobOutput(job.output);
+        loadStats();
       } else if (job.status === "done") {
         clearInterval(jobPollTimer);
         showJobBanner("Complete ✓", "done");

@@ -94,7 +94,7 @@ def api_stats():
         "albums": conn.execute("SELECT COUNT(*) FROM albums").fetchone()[0],
         "tracks": conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0],
         "lyrics_found": conn.execute(
-            "SELECT COUNT(*) FROM tracks WHERE lyrics_source = 'genius'"
+            "SELECT COUNT(*) FROM tracks WHERE lyrics IS NOT NULL AND lyrics_source NOT IN ('not_found', 'error')"
         ).fetchone()[0],
         "summarised": conn.execute(
             "SELECT COUNT(*) FROM tracks WHERE ai_processed_at IS NOT NULL AND summary != ''"
@@ -136,7 +136,7 @@ def api_tracks():
         params.append(f'%"{tag}"%')
 
     if filter_mode == "has_lyrics":
-        clauses.append("t.lyrics_source = 'lyrics_ovh'")
+        clauses.append("(t.lyrics IS NOT NULL AND t.lyrics_source NOT IN ('not_found', 'error'))")
     elif filter_mode == "no_lyrics":
         clauses.append("(t.lyrics_source IN ('not_found', 'error') OR t.lyrics_source IS NULL)")
     elif filter_mode == "has_tags":
