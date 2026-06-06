@@ -1,0 +1,171 @@
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+aside {
+  position: sticky;
+  top: 1rem;
+}
+
+/* Search */
+#search {
+  margin-bottom: 0.75rem;
+}
+
+/* Tag cloud */
+#tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.tag-pill {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--pico-secondary-background);
+  color: var(--pico-secondary);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+
+.tag-pill:hover,
+.tag-pill.active {
+  background: var(--pico-primary-background);
+  color: var(--pico-primary);
+  border-color: var(--pico-primary);
+}
+
+/* Album list */
+#album-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+#album-list li {
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+#album-list li:hover,
+#album-list li.active {
+  background: var(--pico-primary-background);
+  color: var(--pico-primary);
+}
+
+/* Track cards */
+.track-card {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.track-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.track-card h4 {
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+}
+
+.track-card .track-meta {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  margin-bottom: 0.4rem;
+}
+
+.track-card .track-summary {
+  font-size: 0.85rem;
+  margin: 0.4rem 0 0.5rem;
+  color: var(--pico-color);
+}
+
+.track-card .track-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+/* Status indicators */
+.badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-found   { background: #d1fae5; color: #065f46; }
+.badge-missing { background: #fee2e2; color: #991b1b; }
+.badge-ai      { background: #e0e7ff; color: #3730a3; }
+
+/* Job banner */
+.job-banner {
+  padding: 0.5rem 1rem;
+  background: var(--pico-secondary-background);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.job-banner progress {
+  flex: 1;
+  margin: 0;
+}
+
+.hidden { display: none !important; }
+
+/* Stats */
+.stats-text { font-size: 0.8rem; color: var(--pico-muted-color); }
+
+/* Result info */
+#result-info {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+  margin-bottom: 0.5rem;
+}
+
+/* Pagination */
+#pagination {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+/* Modal lyrics */
+#modal-lyrics {
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+#modal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}

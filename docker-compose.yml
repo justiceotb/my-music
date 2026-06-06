@@ -1,0 +1,34 @@
+services:
+  music-ui:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # music.db lives on the host so it survives container rebuilds
+      - ./music.db:/app/music.db
+    environment:
+      # Required for Sync action
+      DISCOGS_TOKEN: ${DISCOGS_TOKEN:-}
+      # Required for Fetch Lyrics action
+      GENIUS_TOKEN: ${GENIUS_TOKEN:-}
+      # Required only for Claude summarise mode
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Ollama — host.docker.internal lets the container reach Ollama on the host machine
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3}
+      DB_PATH: /app/music.db
+    restart: unless-stopped
+
+  # Optional: Cloudflare Tunnel for external HTTPS access.
+  # Set TUNNEL_TOKEN in your .env file (from the Cloudflare Zero Trust dashboard).
+  # Comment out this service if you don't need external access.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    restart: unless-stopped
+    depends_on:
+      - music-ui
+    profiles:
+      - tunnel

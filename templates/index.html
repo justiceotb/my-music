@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Vinyl Collection</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <header class="container-fluid">
+    <nav>
+      <ul><li><strong>🎵 My Vinyl</strong></li></ul>
+      <ul>
+        <li id="stats-display" class="stats-text"></li>
+        <li>
+          <details class="dropdown">
+            <summary role="button" class="secondary outline">Actions</summary>
+            <ul>
+              <li><a href="#" id="btn-sync">Sync Discogs</a></li>
+              <li><a href="#" id="btn-lyrics">Fetch missing lyrics</a></li>
+              <li>
+                <details>
+                  <summary>Summarise unprocessed</summary>
+                  <ul>
+                    <li><a href="#" id="btn-summarise-ollama">With Ollama (local)</a></li>
+                    <li><a href="#" id="btn-summarise-claude">With Claude</a></li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </details>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <div id="job-banner" class="container-fluid job-banner hidden">
+    <progress id="job-progress"></progress>
+    <span id="job-message"></span>
+  </div>
+
+  <main class="container-fluid">
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <input type="search" id="search" placeholder="Search title, lyrics, theme…" />
+
+        <section id="tag-cloud">
+          <small>Tags</small>
+          <div id="tags"></div>
+        </section>
+
+        <section id="album-list">
+          <small>Albums</small>
+          <ul id="albums"></ul>
+        </section>
+      </aside>
+
+      <!-- Track list -->
+      <section id="content">
+        <div id="result-info"></div>
+        <div id="tracks"></div>
+        <div id="pagination"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Track detail modal -->
+  <dialog id="track-modal">
+    <article>
+      <header>
+        <button aria-label="Close" rel="prev" id="modal-close"></button>
+        <h3 id="modal-title"></h3>
+        <p id="modal-meta" class="secondary"></p>
+      </header>
+      <div id="modal-tags"></div>
+      <p id="modal-summary"></p>
+      <details>
+        <summary>Lyrics</summary>
+        <pre id="modal-lyrics"></pre>
+      </details>
+    </article>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

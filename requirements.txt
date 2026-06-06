@@ -1,0 +1,6 @@
+discogs-client
+lyricsgenius
+anthropic
+openai
+flask
+openpyxl

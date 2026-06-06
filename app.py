@@ -1,0 +1,249 @@
+"""
+app.py — Flask web UI for the music collection.
+
+Run locally:
+    python app.py
+
+Or via Docker (see docker-compose.yml). Environment variables:
+    DISCOGS_TOKEN     — for the Sync action
+    GENIUS_TOKEN      — for the Fetch Lyrics action
+    ANTHROPIC_API_KEY — for Claude summarise mode (optional)
+    OLLAMA_HOST       — Ollama server URL (default http://localhost:11434)
+    OLLAMA_MODEL      — Ollama model name (default llama3)
+    DB_PATH           — SQLite path (default music.db)
+"""
+import json
+import os
+import subprocess
+import sys
+from threading import Thread
+
+from flask import Flask, jsonify, render_template, request
+
+from db import init_db, get_connection
+
+app = Flask(__name__)
+
+DB_PATH = os.environ.get("DB_PATH", "music.db")
+
+# Simple in-process job tracker so the UI can poll status
+_jobs: dict[str, dict] = {}
+
+
+def _run_job(job_id: str, cmd: list[str]) -> None:
+    _jobs[job_id] = {"status": "running", "output": ""}
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=3600
+        )
+        _jobs[job_id] = {
+            "status": "done" if result.returncode == 0 else "error",
+            "output": result.stdout + result.stderr,
+        }
+    except Exception as ex:
+        _jobs[job_id] = {"status": "error", "output": str(ex)}
+
+
+def _start_job(job_id: str, cmd: list[str]) -> None:
+    Thread(target=_run_job, args=(job_id, cmd), daemon=True).start()
+
+
+# ──────────────────────────────────────────────
+# UI
+# ──────────────────────────────────────────────
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+# ──────────────────────────────────────────────
+# API — data
+# ──────────────────────────────────────────────
+
+@app.route("/api/albums")
+def api_albums():
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        "SELECT discogs_id, title, year, artists_sort FROM albums ORDER BY artists_sort, year"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/stats")
+def api_stats():
+    conn = get_connection(DB_PATH)
+    stats = {
+        "albums": conn.execute("SELECT COUNT(*) FROM albums").fetchone()[0],
+        "tracks": conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0],
+        "lyrics_found": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE lyrics_source = 'genius'"
+        ).fetchone()[0],
+        "summarised": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE ai_processed_at IS NOT NULL AND summary != ''"
+        ).fetchone()[0],
+    }
+    conn.close()
+    return jsonify(stats)
+
+
+@app.route("/api/tracks")
+def api_tracks():
+    album_id = request.args.get("album_id", type=int)
+    q = (request.args.get("q") or "").strip()
+    tag = (request.args.get("tag") or "").strip()
+    page = request.args.get("page", 1, type=int)
+    per_page = 50
+
+    conn = get_connection(DB_PATH)
+
+    clauses = []
+    params: list = []
+
+    if album_id:
+        clauses.append("t.album_id = ?")
+        params.append(album_id)
+
+    if q:
+        clauses.append(
+            "(t.title LIKE ? OR t.artists LIKE ? OR t.lyrics LIKE ? OR t.summary LIKE ?)"
+        )
+        like = f"%{q}%"
+        params.extend([like, like, like, like])
+
+    if tag:
+        # theme_tags is a JSON array stored as text; LIKE is good enough for tags
+        clauses.append("t.theme_tags LIKE ?")
+        params.append(f'%"{tag}"%')
+
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    total = conn.execute(
+        f"SELECT COUNT(*) FROM tracks t {where}", params
+    ).fetchone()[0]
+
+    rows = conn.execute(
+        f"""
+        SELECT t.id, t.title, t.position, t.artists,
+               a.title as album, a.artists_sort, a.year,
+               t.lyrics_source, t.summary, t.theme_tags,
+               t.ai_processed_at
+        FROM tracks t
+        JOIN albums a ON a.discogs_id = t.album_id
+        {where}
+        ORDER BY a.artists_sort, a.year, t.id
+        LIMIT ? OFFSET ?
+        """,
+        params + [per_page, (page - 1) * per_page],
+    ).fetchall()
+    conn.close()
+
+    return jsonify({
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "tracks": [dict(r) for r in rows],
+    })
+
+
+@app.route("/api/track/<int:track_id>")
+def api_track(track_id: int):
+    conn = get_connection(DB_PATH)
+    row = conn.execute(
+        """
+        SELECT t.*, a.title as album, a.artists_sort, a.year, a.styles
+        FROM tracks t JOIN albums a ON a.discogs_id = t.album_id
+        WHERE t.id = ?
+        """,
+        (track_id,),
+    ).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(dict(row))
+
+
+@app.route("/api/tags")
+def api_tags():
+    """Return all distinct theme tags sorted by frequency."""
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        "SELECT theme_tags FROM tracks WHERE theme_tags IS NOT NULL AND theme_tags != ''"
+    ).fetchall()
+    conn.close()
+
+    counts: dict[str, int] = {}
+    for row in rows:
+        try:
+            for tag in json.loads(row["theme_tags"]):
+                counts[tag] = counts.get(tag, 0) + 1
+        except Exception:
+            pass
+
+    sorted_tags = sorted(counts.items(), key=lambda x: -x[1])
+    return jsonify([{"tag": t, "count": c} for t, c in sorted_tags])
+
+
+# ──────────────────────────────────────────────
+# API — actions (run background scripts)
+# ──────────────────────────────────────────────
+
+@app.route("/api/sync", methods=["POST"])
+def api_sync():
+    token = os.environ.get("DISCOGS_TOKEN")
+    if not token:
+        return jsonify({"error": "DISCOGS_TOKEN not set"}), 400
+    job_id = "sync"
+    _start_job(job_id, [sys.executable, "import_discogs.py", "--token", token, "--db", DB_PATH])
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/fetch-lyrics", methods=["POST"])
+def api_fetch_lyrics():
+    token = os.environ.get("GENIUS_TOKEN")
+    if not token:
+        return jsonify({"error": "GENIUS_TOKEN not set"}), 400
+    job_id = "fetch_lyrics"
+    batch = str(request.json.get("batch", 50)) if request.is_json else "50"
+    _start_job(job_id, [sys.executable, "fetch_lyrics.py",
+                        "--genius-token", token, "--db", DB_PATH, "--batch", batch])
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/summarise", methods=["POST"])
+def api_summarise():
+    data = request.json or {}
+    model_type = data.get("model_type", "ollama")
+    ollama_model = data.get("ollama_model", os.environ.get("OLLAMA_MODEL", "llama3"))
+    ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    batch = str(data.get("batch", 20))
+
+    cmd = [
+        sys.executable, "summarise.py",
+        "--model-type", model_type,
+        "--ollama-model", ollama_model,
+        "--ollama-host", ollama_host,
+        "--db", DB_PATH,
+        "--batch", batch,
+    ]
+    if model_type == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
+
+    _start_job("summarise", cmd)
+    return jsonify({"job_id": "summarise"})
+
+
+@app.route("/api/job/<job_id>")
+def api_job_status(job_id: str):
+    job = _jobs.get(job_id)
+    if not job:
+        return jsonify({"status": "not_started"})
+    return jsonify(job)
+
+
+# ──────────────────────────────────────────────
+
+if __name__ == "__main__":
+    init_db(DB_PATH)
+    app.run(host="0.0.0.0", port=5000, debug=False)
