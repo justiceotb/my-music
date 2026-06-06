@@ -6,7 +6,6 @@ Run locally:
 
 Or via Docker (see docker-compose.yml). Environment variables:
     DISCOGS_TOKEN     — for the Sync action
-    GENIUS_TOKEN      — for the Fetch Lyrics action
     ANTHROPIC_API_KEY — for Claude summarise mode (optional)
     OLLAMA_HOST       — Ollama server URL (default http://localhost:11434)
     OLLAMA_MODEL      — Ollama model name (default llama3)
@@ -235,13 +234,9 @@ def api_enrich():
 
 @app.route("/api/fetch-lyrics", methods=["POST"])
 def api_fetch_lyrics():
-    token = os.environ.get("GENIUS_TOKEN")
-    if not token:
-        return jsonify({"error": "GENIUS_TOKEN not set"}), 400
     job_id = "fetch_lyrics"
     batch = str(request.json.get("batch", 50)) if request.is_json else "50"
-    _start_job(job_id, [sys.executable, "fetch_lyrics.py",
-                        "--genius-token", token, "--db", DB_PATH, "--batch", batch])
+    _start_job(job_id, [sys.executable, "fetch_lyrics.py", "--db", DB_PATH, "--batch", batch])
     return jsonify({"job_id": job_id})
 
 

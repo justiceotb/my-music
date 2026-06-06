@@ -5,7 +5,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 ## Features
 
 - Imports your Discogs vinyl collection into a SQLite database (incremental — safe to re-run)
-- Fetches lyrics from Genius for every track
+- Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for every track (no API token required)
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by title, lyrics content, or theme tag; browse by album; click any track for full lyrics and summary
 - All background tasks (sync, lyrics, summarise) are triggerable from the UI
@@ -17,7 +17,8 @@ my-music/
 ├── all-songs.py          # Original Discogs → Excel exporter (unchanged)
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
-├── fetch_lyrics.py       # LyricsGenius lyrics fetcher
+├── fetch_lyrics.py       # lyrics.ovh lyrics fetcher
+├── fetch_lyrics_genius.py  # Archived Genius fetcher (reference only)
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)
@@ -46,14 +47,14 @@ my-music/
 albums (discogs_id, title, year, artists_sort, styles, format, notes, imported_at)
 
 tracks (id, album_id, position, title, artists,
-        lyrics, lyrics_fetched_at, lyrics_source,   -- "genius" | "not_found" | "error"
+        lyrics, lyrics_fetched_at, lyrics_source,   -- "lyrics_ovh" | "not_found" | "error"
         summary, theme_tags,                         -- JSON array e.g. '["longing","travel"]'
         ai_processed_at)
 ```
 
 ## Running tests locally
 
-The test suite runs entirely without Docker, live APIs, or real tokens. All external services (Discogs, Genius, Ollama, Claude) are mocked.
+The test suite runs entirely without Docker, live APIs, or real tokens. All external services (Discogs, lyrics.ovh, Ollama, Claude) are mocked.
 
 ### Setup
 
@@ -83,7 +84,6 @@ Open `.vscode/launch.json` — it has three pre-configured launch targets:
 1. Create a `.env` file in the project root (already in `.gitignore`):
    ```
    DISCOGS_TOKEN=your_token_here
-   GENIUS_TOKEN=your_token_here
    ANTHROPIC_API_KEY=sk-ant-...
    ```
 2. Install the [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) extension — VS Code then reads these values automatically for the `${env:VAR}` references in `launch.json`.
@@ -98,8 +98,8 @@ pip install -r requirements.txt
 # 1. Import your Discogs collection
 python import_discogs.py --token YOUR_DISCOGS_TOKEN
 
-# 2. Fetch lyrics (get a token at genius.com/api-clients → API Clients)
-python fetch_lyrics.py --genius-token YOUR_GENIUS_TOKEN
+# 2. Fetch lyrics (no token required)
+python fetch_lyrics.py
 
 # 3. Summarise tracks that have lyrics (needs Ollama running locally)
 python summarise.py
@@ -129,7 +129,6 @@ Point Portainer at `docker-compose.yml` and stack it from there.
 | Variable | Required | Description |
 |---|---|---|
 | `DISCOGS_TOKEN` | Yes (for sync) | Discogs user token — [get one here](https://www.discogs.com/settings/developers) |
-| `GENIUS_TOKEN` | Yes (for lyrics) | Genius **Client Access Token** (not a user OAuth token) — [get one here](https://genius.com/api-clients) |
 | `ANTHROPIC_API_KEY` | Claude mode only | Anthropic API key |
 | `OLLAMA_HOST` | No | Ollama URL (default `http://host.docker.internal:11434`) |
 | `OLLAMA_MODEL` | No | Ollama model name (default `llama3`) |
@@ -149,14 +148,13 @@ python import_discogs.py --token TOKEN [--db music.db]
 
 ### `fetch_lyrics.py`
 
-Fetches lyrics from Genius for all tracks where `lyrics_fetched_at IS NULL`. Commits after every batch — fully resumable if interrupted.
+Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for all tracks where `lyrics_fetched_at IS NULL`. No API token required. Commits after every batch — fully resumable if interrupted.
 
 ```bash
-python fetch_lyrics.py --genius-token TOKEN [--batch 50] [--db music.db]
-# or: GENIUS_TOKEN=... python fetch_lyrics.py
+python fetch_lyrics.py [--batch 50] [--db music.db]
 
 # Ad-hoc lookup — no DB required, prints lyrics to stdout:
-python fetch_lyrics.py --genius-token TOKEN --artist "Pink Floyd" --title "Comfortably Numb"
+python fetch_lyrics.py --artist "Pink Floyd" --title "Comfortably Numb"
 ```
 
 ### `summarise.py`
@@ -217,10 +215,9 @@ Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to
 
 ## Container Logs (Portainer)
 
-All background job output (Discogs sync, lyrics fetch, summarise) is teed to the container's stdout so it appears in Portainer's log view in real time. Log lines are prefixed with the job ID, e.g. `[lyrics] 2026-01-01T00:00:00Z [DEBUG] Querying Genius: …`.
+All background job output (Discogs sync, lyrics fetch, summarise) is teed to the container's stdout so it appears in Portainer's log view in real time. Log lines are prefixed with the job ID, e.g. `[lyrics] 2026-01-01T00:00:00Z [DEBUG] …`.
 
 `fetch_lyrics.py` uses Python's `logging` module at DEBUG level, so you'll see:
-- Token preview and client initialisation on startup
-- Per-track Genius query attempts with artist/title/track_id
-- Detailed error context on 403 (token preview included) and other exceptions
+- Per-track lyrics.ovh query attempts with artist/title
+- HTTP error context for failed requests
 - Batch commit summaries

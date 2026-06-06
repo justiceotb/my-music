@@ -143,17 +143,7 @@ def test_tags(client):
 
 # ── /api/fetch-lyrics ─────────────────────────────────────────────────────────
 
-def test_fetch_lyrics_requires_token(client, monkeypatch):
-    monkeypatch.delenv("GENIUS_TOKEN", raising=False)
-    # Patch the app module's os.environ.get directly
-    with patch.dict(os.environ, {}, clear=False):
-        os.environ.pop("GENIUS_TOKEN", None)
-        resp = client.post("/api/fetch-lyrics", json={"batch": 10})
-    assert resp.status_code == 400
-
-
-def test_fetch_lyrics_starts_job(client, app_module, monkeypatch):
-    monkeypatch.setenv("GENIUS_TOKEN", "fake-token")
+def test_fetch_lyrics_starts_job(client, app_module):
     with patch.object(app_module, "_start_job") as mock_start:
         resp = client.post("/api/fetch-lyrics", json={"batch": 10})
     assert resp.status_code == 200
