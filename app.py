@@ -325,6 +325,54 @@ def api_stop_job(job_id: str):
 
 
 # ──────────────────────────────────────────────
+# API - debug / maintenance
+# ──────────────────────────────────────────────
+
+@app.route("/api/debug/health")
+def api_debug_health():
+    conn = get_connection(DB_PATH)
+    data = {
+        "pending_lyrics": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE lyrics_source IS NULL"
+        ).fetchone()[0],
+        "pending_summary": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE lyrics IS NOT NULL AND ai_processed_at IS NULL"
+        ).fetchone()[0],
+        "stuck_summary": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE ai_processed_at IS NOT NULL AND (summary IS NULL OR summary = '')"
+        ).fetchone()[0],
+        "no_lyrics": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE lyrics_source IN ('not_found', 'error')"
+        ).fetchone()[0],
+        "total_tracks": conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0],
+        "total_albums": conn.execute("SELECT COUNT(*) FROM albums").fetchone()[0],
+        "with_lyrics": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE lyrics IS NOT NULL AND lyrics_source NOT IN ('not_found', 'error')"
+        ).fetchone()[0],
+        "with_summary": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE ai_processed_at IS NOT NULL AND summary IS NOT NULL AND summary != ''"
+        ).fetchone()[0],
+        "with_tags": conn.execute(
+            "SELECT COUNT(*) FROM tracks WHERE theme_tags IS NOT NULL AND theme_tags != '[]' AND theme_tags != ''"
+        ).fetchone()[0],
+    }
+    conn.close()
+    return jsonify(data)
+
+
+@app.route("/api/debug/reset-stuck", methods=["POST"])
+def api_debug_reset_stuck():
+    conn = get_connection(DB_PATH)
+    result = conn.execute(
+        "UPDATE tracks SET ai_processed_at = NULL WHERE ai_processed_at IS NOT NULL AND (summary IS NULL OR summary = '')"
+    )
+    count = result.rowcount
+    conn.commit()
+    conn.close()
+    return jsonify({"reset": count})
+
+
+# ──────────────────────────────────────────────
 
 if __name__ == "__main__":
     init_db(DB_PATH)
