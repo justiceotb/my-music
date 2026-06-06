@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "my-music",
-      "runtimeExecutable": "curl",
-      "runtimeArgs": ["-s", "http://localhost:5000"],
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
+      "runtimeArgs": ["app.py"],
       "port": 5000
     }
   ]

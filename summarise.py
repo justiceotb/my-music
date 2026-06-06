@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from db import init_db, get_connection
 from version import __version__
 
-logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("summarise")
 
 SYSTEM_PROMPT = """You are a music analyst. Given a song's title, artist, album, and lyrics,
@@ -171,6 +171,15 @@ def summarise(
     total_ok = 0
     total_err = 0
 
+    total_tracks = conn.execute(
+        """
+        SELECT COUNT(*) FROM tracks t
+        WHERE t.lyrics IS NOT NULL AND t.ai_processed_at IS NULL
+        """
+    ).fetchone()[0]
+    print(f"{total_tracks} tracks to process", flush=True)
+    track_num = 0
+
     while True:
         rows = conn.execute(
             """
@@ -187,9 +196,8 @@ def summarise(
         if not rows:
             break
 
-        print(f"Processing batch of {len(rows)} tracks…", flush=True)
-
         for row in rows:
+            track_num += 1
             track_id = row["id"]
             title = row["title"]
             artist = (row["artists"] or row["artists_sort"] or "").strip()
@@ -197,7 +205,6 @@ def summarise(
             lyrics = row["lyrics"]
 
             try:
-                log.debug("Calling %s for track %d: %s - %s", model_type, track_id, artist, title)
                 if model_type == "ollama":
                     result = call_ollama(client, ollama_model, title, artist, album, lyrics)
                 else:
@@ -205,7 +212,6 @@ def summarise(
 
                 summary = result.get("summary", "")
                 theme_tags = json.dumps(result.get("theme_tags", []))
-                log.debug("Response for track %d: summary=%s tags=%s", track_id, summary, theme_tags)
 
                 conn.execute(
                     """
@@ -217,12 +223,12 @@ def summarise(
                 )
                 conn.commit()
                 total_ok += 1
-                print(f"  ✓ {artist} - {title}: {result.get('theme_tags', [])}", flush=True)
+                print(f"  [{track_num}/{total_tracks}] ✓ {artist} - {title}: {result.get('theme_tags', [])}", flush=True)
 
             except Exception as ex:
                 total_err += 1
-                print(f"  ! Error for {artist} - {title}: {ex}", flush=True)
-                log.debug("Full traceback:", exc_info=True)
+                print(f"  [{track_num}/{total_tracks}] ! Error for {artist} - {title}: {ex}", flush=True)
+                log.warning("Full traceback for track %d:", track_id, exc_info=True)
 
             # Polite delay between API calls
             time.sleep(0.3)
