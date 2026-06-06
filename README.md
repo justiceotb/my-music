@@ -24,6 +24,16 @@ my-music/
 ├── static/app.js         # UI logic
 ├── static/app.css        # Styles
 ├── version.py            # Single source of truth for semver (imported by all modules)
+├── tests/                # Local pytest suite (no Docker, no real tokens)
+│   ├── conftest.py       # Shared fixtures (tmp_db, seeded_db)
+│   ├── test_db.py
+│   ├── test_fetch_lyrics.py
+│   ├── test_summarise.py
+│   ├── test_import_discogs.py
+│   ├── test_enrich_discogs.py
+│   └── test_app.py
+├── requirements-dev.txt  # pytest + pytest-mock (dev only)
+├── .vscode/launch.json   # VS Code run/debug configs with env var instructions
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -40,6 +50,45 @@ tracks (id, album_id, position, title, artists,
         summary, theme_tags,                         -- JSON array e.g. '["longing","travel"]'
         ai_processed_at)
 ```
+
+## Running tests locally
+
+The test suite runs entirely without Docker, live APIs, or real tokens. All external services (Discogs, Genius, Ollama, Claude) are mocked.
+
+### Setup
+
+**Option A — uv (recommended if you already have uv):**
+```bash
+uv venv
+uv pip install -r requirements.txt -r requirements-dev.txt
+.venv/Scripts/pytest tests/ -v      # Windows
+# or
+.venv/bin/pytest tests/ -v          # macOS/Linux
+```
+
+**Option B — standard pip:**
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/ -v
+```
+
+### VS Code
+
+Open `.vscode/launch.json` — it has three pre-configured launch targets:
+- **pytest (all tests)** — runs the full suite; reads tokens from your OS environment or a `.env` file (tests don't need them, but the Flask app does)
+- **pytest (current file)** — runs the currently open test file
+- **Flask (local)** — starts the app locally; fill in your tokens in the `env` block
+
+**To set tokens without touching shell profiles:**
+1. Create a `.env` file in the project root (already in `.gitignore`):
+   ```
+   DISCOGS_TOKEN=your_token_here
+   GENIUS_TOKEN=your_token_here
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+2. Install the [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) extension — VS Code then reads these values automatically for the `${env:VAR}` references in `launch.json`.
+
+---
 
 ## Quickstart (local)
 
