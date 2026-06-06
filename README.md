@@ -162,7 +162,7 @@ python fetch_lyrics_ovh.py --artist "Pink Floyd" --title "Comfortably Numb"
 
 ### `summarise.py`
 
-Generates a thematic summary and tag list for every track that has lyrics but no AI summary yet. Resumable.
+Generates a thematic summary and tag list for every track that has lyrics but no AI summary yet. Resumable. Commits each track immediately after write (not end-of-batch), and strips markdown fences from model responses that ignore the JSON-only instruction.
 
 ```bash
 # Ollama (default)

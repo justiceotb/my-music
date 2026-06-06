@@ -51,6 +51,15 @@ def truncate_lyrics(lyrics: str, max_chars: int = 3000) -> str:
     return lyrics[:max_chars] if len(lyrics) > max_chars else lyrics
 
 
+def _parse_json_response(text: str) -> dict:
+    """Parse JSON from AI response, stripping markdown fences if present."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1]
+        text = text.rsplit("```", 1)[0]
+    return json.loads(text.strip())
+
+
 def call_ollama(client, model: str, title: str, artist: str, album: str, lyrics: str) -> dict:
     prompt = USER_TEMPLATE.format(
         title=title, artist=artist, album=album, lyrics=truncate_lyrics(lyrics)
@@ -63,7 +72,7 @@ def call_ollama(client, model: str, title: str, artist: str, album: str, lyrics:
         ],
         temperature=0.3,
     )
-    return json.loads(response.choices[0].message.content)
+    return _parse_json_response(response.choices[0].message.content)
 
 
 def call_claude(client, model: str, title: str, artist: str, album: str, lyrics: str) -> dict:
@@ -76,7 +85,7 @@ def call_claude(client, model: str, title: str, artist: str, album: str, lyrics:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
-    return json.loads(response.content[0].text)
+    return _parse_json_response(response.content[0].text)
 
 
 def summarise_one_track(
@@ -131,9 +140,10 @@ def summarise_one_track(
             (summary, theme_tags, now_iso(), track_id),
         )
         conn.commit()
-        print(f"  ✓ {artist} - {title}: {result.get('theme_tags', [])}")
+        print(f"  ✓ {artist} - {title}: {result.get('theme_tags', [])}", flush=True)
     except Exception as ex:
-        print(f"  ! Error for {artist} - {title}: {ex}")
+        print(f"  ! Error for {artist} - {title}: {ex}", flush=True)
+        log.debug("Full traceback:", exc_info=True)
     finally:
         conn.close()
 
@@ -177,7 +187,7 @@ def summarise(
         if not rows:
             break
 
-        print(f"Processing batch of {len(rows)} tracks…")
+        print(f"Processing batch of {len(rows)} tracks…", flush=True)
 
         for row in rows:
             track_id = row["id"]
@@ -205,28 +215,20 @@ def summarise(
                     """,
                     (summary, theme_tags, now_iso(), track_id),
                 )
+                conn.commit()
                 total_ok += 1
-                print(f"  ✓ {artist} - {title}: {result.get('theme_tags', [])}")
+                print(f"  ✓ {artist} - {title}: {result.get('theme_tags', [])}", flush=True)
 
             except Exception as ex:
                 total_err += 1
-                print(f"  ! Error for {artist} - {title}: {ex}")
-                # Mark as attempted with empty summary so we don't retry forever
-                # Remove this if you'd rather retry on next run
-                conn.execute(
-                    "UPDATE tracks SET ai_processed_at = ? WHERE id = ?",
-                    (now_iso(), track_id),
-                )
+                print(f"  ! Error for {artist} - {title}: {ex}", flush=True)
+                log.debug("Full traceback:", exc_info=True)
 
             # Polite delay between API calls
             time.sleep(0.3)
 
-        conn.commit()
-        log.debug("Committed batch. ok=%d err=%d", total_ok, total_err)
-        print(f"  Batch committed. OK: {total_ok}, errors: {total_err}")
-
     conn.close()
-    print(f"\nDone. Summarised: {total_ok}, errors: {total_err}")
+    print(f"\nDone. Summarised: {total_ok}, errors: {total_err}", flush=True)
 
 
 def main() -> None:
