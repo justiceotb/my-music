@@ -125,10 +125,10 @@ def api_tracks():
 
     if q:
         clauses.append(
-            "(t.title LIKE ? OR t.artists LIKE ? OR t.lyrics LIKE ? OR t.summary LIKE ?)"
+            "(t.title LIKE ? OR t.artists LIKE ? OR a.title LIKE ? OR t.lyrics LIKE ? OR t.summary LIKE ?)"
         )
         like = f"%{q}%"
-        params.extend([like, like, like, like])
+        params.extend([like, like, like, like, like])
 
     if tag:
         # theme_tags is a JSON array stored as text; LIKE is good enough for tags
