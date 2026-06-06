@@ -51,7 +51,7 @@ def search(artist: str, title: str) -> str | None:
     query = f"{artist} {title}"
     log.debug("syncedlyrics query: %r", query)
     try:
-        result = syncedlyrics.search(query, allow_plain_format=True)
+        result = syncedlyrics.search(query, plain_only=True)
     except Exception as ex:
         log.warning("syncedlyrics raised for %r: %s", query, ex)
         return None
