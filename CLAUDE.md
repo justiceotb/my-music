@@ -2,7 +2,7 @@
 
 ## Project overview
 
-A personal vinyl collection app. Imports a Discogs collection into SQLite, fetches lyrics from Genius, generates AI thematic summaries via Ollama or Claude, and serves a Flask web UI. Runs in Docker / Portainer.
+A personal vinyl collection app. Imports a Discogs collection into SQLite, fetches lyrics from lyrics.ovh, generates AI thematic summaries via Ollama or Claude, and serves a Flask web UI. Runs in Docker / Portainer.
 
 ## Key files
 
@@ -12,7 +12,8 @@ A personal vinyl collection app. Imports a Discogs collection into SQLite, fetch
 | `db.py` | Shared SQLite helpers — schema init, connection factory. |
 | `import_discogs.py` | Discogs → SQLite importer (incremental, safe to re-run). |
 | `enrich_discogs.py` | Back-fills missing album fields from Discogs release pages. |
-| `fetch_lyrics.py` | Fetches lyrics from Genius for unprocessed tracks. Resumable — only touches rows where `lyrics_fetched_at IS NULL`. Uses Python `logging` at DEBUG level; output appears in Portainer container logs. |
+| `fetch_lyrics.py` | Fetches lyrics from lyrics.ovh for unprocessed tracks. Resumable — only touches rows where `lyrics_fetched_at IS NULL`. No API token required. Uses Python `logging` at DEBUG level; output appears in Portainer container logs. |
+| `fetch_lyrics_genius.py` | Archived Genius-based lyrics fetcher (reference only, not wired in). |
 | `summarise.py` | AI thematic summariser — Ollama (default) or Claude. Produces 3–5 sentence summary + JSON tag list per track. |
 | `version.py` | Single source of truth for semver. Imported by all modules. **Must be bumped with every code change.** |
 | `all-songs.py` | Original Discogs → Excel exporter (legacy, kept unchanged). |
@@ -23,7 +24,7 @@ A personal vinyl collection app. Imports a Discogs collection into SQLite, fetch
 albums (discogs_id, title, year, artists_sort, styles, format, notes, imported_at)
 
 tracks (id, album_id, position, title, artists,
-        lyrics, lyrics_fetched_at, lyrics_source,  -- "genius" | "not_found" | "error"
+        lyrics, lyrics_fetched_at, lyrics_source,  -- "lyrics_ovh" | "not_found" | "error"
         summary, theme_tags,                        -- JSON array e.g. '["longing","travel"]'
         ai_processed_at)
 ```
@@ -46,7 +47,7 @@ gh pr create ...
 ```bash
 pip install -r requirements.txt
 python import_discogs.py --token YOUR_DISCOGS_TOKEN
-python fetch_lyrics.py --genius-token YOUR_GENIUS_TOKEN
+python fetch_lyrics.py
 python summarise.py
 python app.py   # → http://localhost:5000
 ```
@@ -65,7 +66,6 @@ Database persists at `./data/music.db` on the host.
 | Variable | Required | Default | Notes |
 |---|---|---|---|
 | `DISCOGS_TOKEN` | Sync | — | Discogs user token |
-| `GENIUS_TOKEN` | Lyrics | — | Genius Client Access Token (not OAuth) |
 | `ANTHROPIC_API_KEY` | Claude mode | — | |
 | `OLLAMA_HOST` | No | `http://host.docker.internal:11434` | |
 | `OLLAMA_MODEL` | No | `llama3` | |
@@ -81,9 +81,8 @@ Jobs run as subprocesses. `_run_job` in `app.py` captures stdout+stderr and:
 ## Logging
 
 `fetch_lyrics.py` uses `logging.basicConfig(level=DEBUG)` writing to stderr. Log lines include:
-- Token preview on startup (first 4 + last 4 chars)
-- Per-track Genius query attempts (artist, title, track_id)
-- 403 error detail with token preview for auth debugging
+- Per-track lyrics.ovh query attempts (artist, title)
+- HTTP error details for failed requests
 - Batch commit summaries
 
 ## Cloudflare Tunnel (optional)

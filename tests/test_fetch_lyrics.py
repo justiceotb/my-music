@@ -1,7 +1,7 @@
 """
 Tests for fetch_lyrics.py.
 
-All Genius API calls and time.sleep are mocked — no real token needed.
+All HTTP calls and time.sleep are mocked — no network access needed.
 """
 from unittest.mock import MagicMock, patch
 
@@ -33,37 +33,39 @@ def _get_track(db_path, track_id=1):
     return row
 
 
+def _mock_response(status_code=200, json_data=None):
+    resp = MagicMock()
+    resp.status_code = status_code
+    resp.json.return_value = json_data or {}
+    resp.text = ""
+    return resp
+
+
 # ── found ─────────────────────────────────────────────────────────────────────
 
 @patch("fetch_lyrics.time.sleep")
-@patch("fetch_lyrics.lyricsgenius.Genius")
-def test_lyrics_found(MockGenius, mock_sleep, tmp_db):
+@patch("fetch_lyrics.requests.get")
+def test_lyrics_found(mock_get, mock_sleep, tmp_db):
     _seed_track(tmp_db)
+    mock_get.return_value = _mock_response(200, {"lyrics": "Hey Jude, don't make it bad…"})
 
-    mock_song = MagicMock()
-    mock_song.lyrics = "Hey Jude, don't make it bad…"
-    instance = MockGenius.return_value
-    instance.search_song.return_value = mock_song
-
-    fetch_lyrics("fake-token", tmp_db, batch_size=50)
+    fetch_lyrics(tmp_db, batch_size=50)
 
     row = _get_track(tmp_db)
-    assert row["lyrics_source"] == "genius"
+    assert row["lyrics_source"] == "lyrics_ovh"
     assert row["lyrics"] == "Hey Jude, don't make it bad…"
     assert row["lyrics_fetched_at"] is not None
 
 
-# ── not found ─────────────────────────────────────────────────────────────────
+# ── not found (404) ───────────────────────────────────────────────────────────
 
 @patch("fetch_lyrics.time.sleep")
-@patch("fetch_lyrics.lyricsgenius.Genius")
-def test_lyrics_not_found(MockGenius, mock_sleep, tmp_db):
+@patch("fetch_lyrics.requests.get")
+def test_lyrics_not_found(mock_get, mock_sleep, tmp_db):
     _seed_track(tmp_db)
+    mock_get.return_value = _mock_response(404)
 
-    instance = MockGenius.return_value
-    instance.search_song.return_value = None
-
-    fetch_lyrics("fake-token", tmp_db, batch_size=50)
+    fetch_lyrics(tmp_db, batch_size=50)
 
     row = _get_track(tmp_db)
     assert row["lyrics_source"] == "not_found"
@@ -71,36 +73,32 @@ def test_lyrics_not_found(MockGenius, mock_sleep, tmp_db):
     assert row["lyrics_fetched_at"] is not None
 
 
-# ── 403 abort ─────────────────────────────────────────────────────────────────
+# ── not found (empty lyrics field) ───────────────────────────────────────────
 
 @patch("fetch_lyrics.time.sleep")
-@patch("fetch_lyrics.lyricsgenius.Genius")
-def test_403_aborts_run(MockGenius, mock_sleep, tmp_db):
-    """A 403 exception should abort the run; the track must remain unprocessed."""
+@patch("fetch_lyrics.requests.get")
+def test_lyrics_empty_body(mock_get, mock_sleep, tmp_db):
     _seed_track(tmp_db)
+    mock_get.return_value = _mock_response(200, {"lyrics": ""})
 
-    instance = MockGenius.return_value
-    instance.search_song.side_effect = Exception("403 Forbidden")
+    fetch_lyrics(tmp_db, batch_size=50)
 
-    fetch_lyrics("fake-token", tmp_db, batch_size=50)
-
-    # The track was not committed as processed — it should still have NULL fetched_at
     row = _get_track(tmp_db)
-    assert row["lyrics_fetched_at"] is None
+    assert row["lyrics_source"] == "not_found"
+    assert row["lyrics"] is None
+    assert row["lyrics_fetched_at"] is not None
 
 
-# ── non-403 error marks track ──────────────────────────────────────────────────
+# ── request error marks track ─────────────────────────────────────────────────
 
 @patch("fetch_lyrics.time.sleep")
-@patch("fetch_lyrics.lyricsgenius.Genius")
-def test_generic_error_marks_track(MockGenius, mock_sleep, tmp_db):
-    """Non-403 errors should mark the track as 'error' and continue."""
+@patch("fetch_lyrics.requests.get")
+def test_request_error_marks_track(mock_get, mock_sleep, tmp_db):
+    """Network errors should mark the track as 'error' and continue."""
     _seed_track(tmp_db)
+    mock_get.side_effect = Exception("Connection timeout")
 
-    instance = MockGenius.return_value
-    instance.search_song.side_effect = Exception("Connection timeout")
-
-    fetch_lyrics("fake-token", tmp_db, batch_size=50)
+    fetch_lyrics(tmp_db, batch_size=50)
 
     row = _get_track(tmp_db)
     assert row["lyrics_source"] == "error"

@@ -1,5 +1,5 @@
 discogs-client
-lyricsgenius==3.0.1
+requests
 anthropic
 openai
 flask

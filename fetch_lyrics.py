@@ -1,26 +1,24 @@
 """
-fetch_lyrics.py — Fetch lyrics from Genius for all unprocessed tracks.
+fetch_lyrics.py — Fetch lyrics from lyrics.ovh for all unprocessed tracks.
 
 Usage:
-    python fetch_lyrics.py --genius-token YOUR_TOKEN
-    python fetch_lyrics.py --genius-token YOUR_TOKEN --batch 50 --db music.db
+    python fetch_lyrics.py
+    python fetch_lyrics.py --batch 50 --db music.db
 
     # Ad-hoc lookup (no DB required):
-    python fetch_lyrics.py --genius-token YOUR_TOKEN --artist "Pink Floyd" --title "Comfortably Numb"
+    python fetch_lyrics.py --artist "Pink Floyd" --title "Comfortably Numb"
 
 Resumable: only processes tracks where lyrics_fetched_at IS NULL.
 Commits after each batch so progress is never lost.
 """
 import argparse
 import logging
-import os
 import time
 from datetime import datetime, timezone
 
+import requests
+
 from version import __version__
-
-import lyricsgenius
-
 from db import init_db, get_connection
 
 logging.basicConfig(
@@ -30,41 +28,45 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+_API_BASE = "https://api.lyrics.ovh/v1"
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def fetch_one(genius, artist: str, title: str) -> None:
-    log.debug("Ad-hoc query — artist=%r title=%r", artist, title)
+def _lookup(artist: str, title: str):
+    """Call lyrics.ovh and return (lyrics_text, source) or (None, 'not_found'/'error')."""
+    url = f"{_API_BASE}/{requests.utils.quote(artist)}/{requests.utils.quote(title)}"
     try:
-        song = genius.search_song(title, artist)
-        if song and song.lyrics:
-            print(f"  ✓ {artist} — {title}\n")
-            print(song.lyrics)
-        else:
-            print(f"  ✗ Not found: {artist} — {title}")
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            lyrics = data.get("lyrics", "").strip()
+            if lyrics:
+                return lyrics, "lyrics_ovh"
+            return None, "not_found"
+        if resp.status_code == 404:
+            return None, "not_found"
+        log.warning("Unexpected HTTP %s for %r — %r", resp.status_code, url, resp.text[:200])
+        return None, "error"
     except Exception as ex:
-        print(f"  ! Error: {ex}")
-        log.error("Ad-hoc lookup failed: %s", ex, exc_info=True)
+        log.warning("Request error for %r — %r: %s", artist, title, ex)
+        return None, "error"
 
 
-def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
+def fetch_one(artist: str, title: str) -> None:
+    log.debug("Ad-hoc query — artist=%r title=%r", artist, title)
+    lyrics, source = _lookup(artist, title)
+    if source == "lyrics_ovh":
+        print(f"  ✓ {artist} — {title}\n")
+        print(lyrics)
+    else:
+        print(f"  ✗ Not found: {artist} — {title}")
+
+
+def fetch_lyrics(db_path: str, batch_size: int) -> None:
     init_db(db_path)
-
-    token_preview = genius_token[:4] + "…" + genius_token[-4:] if len(genius_token) >= 8 else "***"
-    log.debug("Genius token: %s (len=%d)", token_preview, len(genius_token))
-    log.debug("Initialising lyricsgenius client (timeout=10s, skip_non_songs=True)")
-
-    genius = lyricsgenius.Genius(
-        genius_token,
-        verbose=True,
-        timeout=10,
-        skip_non_songs=True,
-        excluded_terms=["(Remix)", "(Live)"],
-        remove_section_headers=True,
-    )
-
     conn = get_connection(db_path)
 
     total_fetched = 0
@@ -94,39 +96,20 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
             title = row["title"]
             artist = (row["artists"] or row["artists_sort"] or "").strip()
 
-            lyrics = None
-            source = "not_found"
+            lyrics, source = _lookup(artist, title)
 
-            log.debug("Querying Genius: track_id=%s artist=%r title=%r", track_id, artist, title)
-            try:
-                song = genius.search_song(title, artist)
-                if song and song.lyrics:
-                    lyrics = song.lyrics
-                    source = "genius"
-                    total_fetched += 1
-                    log.info("  ✓ %s — %s (lyrics_len=%d)", artist, title, len(lyrics))
-                    print(f"  ✓ {artist} — {title}")
-                else:
-                    total_not_found += 1
-                    log.debug("  ✗ Not found: %s — %s (song=%r)", artist, title, song)
-                    print(f"  ✗ Not found: {artist} — {title}")
-            except Exception as ex:
-                if "403" in str(ex):
-                    log.error(
-                        "403 Forbidden from Genius — rate-limited or bad token. "
-                        "token_preview=%s track=%r %r | error: %s",
-                        token_preview, artist, title, ex,
-                    )
-                    print(f"  ! 403 Forbidden — rate-limited or bad token. Stopping run (track left unprocessed): {artist} — {title}")
-                    conn.commit()
-                    conn.close()
-                    log.info("Aborted. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
-                    print(f"\nAborted. Found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}")
-                    return
-                source = "error"
+            if source == "lyrics_ovh":
+                total_fetched += 1
+                log.info("  ✓ %s — %s (lyrics_len=%d)", artist, title, len(lyrics))
+                print(f"  ✓ {artist} — {title}")
+            elif source == "not_found":
+                total_not_found += 1
+                log.debug("  ✗ Not found: %s — %s", artist, title)
+                print(f"  ✗ Not found: {artist} — {title}")
+            else:
                 total_errors += 1
-                log.warning("  ! Error for %s — %s: %s", artist, title, ex, exc_info=True)
-                print(f"  ! Error for {artist} — {title}: {ex}")
+                log.warning("  ! Error for %s — %s", artist, title)
+                print(f"  ! Error for {artist} — {title}")
 
             conn.execute(
                 """
@@ -151,21 +134,12 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
 
     conn.close()
     log.info("Done. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
-    print(
-        f"\nDone. Found: {total_fetched}, not found: {total_not_found}, "
-        f"errors: {total_errors}"
-    )
+    print(f"\nDone. Found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Fetch lyrics from Genius for all unprocessed tracks"
-    )
-    parser.add_argument(
-        "--genius-token",
-        default=os.environ.get("GENIUS_TOKEN"),
-        required=not os.environ.get("GENIUS_TOKEN"),
-        help="Genius API client access token (or set GENIUS_TOKEN env var)",
+        description="Fetch lyrics from lyrics.ovh for all unprocessed tracks"
     )
     parser.add_argument("--db", default="music.db", help="SQLite database path")
     parser.add_argument(
@@ -179,19 +153,9 @@ def main() -> None:
         parser.error("--artist and --title must be used together")
 
     if args.artist and args.title:
-        token_preview = args.genius_token[:4] + "…" + args.genius_token[-4:] if len(args.genius_token) >= 8 else "***"
-        log.debug("Genius token: %s (len=%d)", token_preview, len(args.genius_token))
-        genius = lyricsgenius.Genius(
-            args.genius_token,
-            verbose=True,
-            timeout=10,
-            skip_non_songs=True,
-            excluded_terms=["(Remix)", "(Live)"],
-            remove_section_headers=True,
-        )
-        fetch_one(genius, args.artist, args.title)
+        fetch_one(args.artist, args.title)
     else:
-        fetch_lyrics(args.genius_token, args.db, args.batch)
+        fetch_lyrics(args.db, args.batch)
 
 
 if __name__ == "__main__":
