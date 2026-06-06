@@ -127,13 +127,65 @@ nav > ul:last-child details.dropdown > ul {
   left: auto;
 }
 
+/* Content toolbar */
+.content-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sort-label {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.sort-label select {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.4rem;
+  margin: 0;
+  height: auto;
+  width: auto;
+}
+
+/* Discogs link */
+.discogs-link {
+  font-size: 0.8rem;
+  display: inline-block;
+  margin-top: 0.25rem;
+}
+
 /* Job banner */
 .job-banner {
+  display: flex;
   padding: 0.5rem 1rem;
   background: var(--pico-secondary-background);
   flex-direction: column;
   align-items: stretch;
   gap: 0.5rem;
+}
+
+.job-current-step {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  font-style: italic;
+  min-height: 1.2em;
+}
+
+.job-banner.job-done .job-banner-header progress {
+  display: none;
+}
+
+.job-banner.job-done {
+  border-left: 3px solid var(--pico-color-green-500, #22c55e);
+}
+
+.job-banner.job-error {
+  border-left: 3px solid var(--pico-color-red-500, #ef4444);
 }
 
 .job-banner-header {
