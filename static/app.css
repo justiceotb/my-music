@@ -315,6 +315,13 @@ header.container-fluid nav details.dropdown > ul li a {
   font-size: 0.8rem;
 }
 
+.modal-casual {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--pico-secondary);
+  margin-top: -0.4rem;
+}
+
 /* Content toolbar */
 .content-toolbar {
   display: flex;

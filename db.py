@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     lyrics_fetched_at TEXT,
     lyrics_source     TEXT,
     summary           TEXT,
+    summary_casual    TEXT,
     theme_tags        TEXT,
     ai_processed_at   TEXT
 );
@@ -49,9 +50,15 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 
 
 def init_db(db_path: str) -> None:
-    """Create tables if they don't exist yet."""
+    """Create tables if they don't exist yet, and migrate existing schemas."""
     with get_connection(db_path) as conn:
         conn.executescript(SCHEMA)
+        # Migration: add summary_casual column to existing databases
+        try:
+            conn.execute("ALTER TABLE tracks ADD COLUMN summary_casual TEXT")
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
 
 
 @contextmanager

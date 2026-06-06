@@ -263,6 +263,13 @@ async function openModal(trackId) {
     .join("");
 
   el("modal-summary").textContent = t.summary || "(No summary yet)";
+  const casualEl = el("modal-casual");
+  if (t.summary_casual) {
+    casualEl.textContent = `"${t.summary_casual}"`;
+    casualEl.style.display = "";
+  } else {
+    casualEl.style.display = "none";
+  }
   el("modal-lyrics").textContent = t.lyrics || "(No lyrics yet)";
   el("track-modal").showModal();
 }
@@ -405,6 +412,15 @@ el("btn-summarise-ollama").addEventListener("click", e => {
   }));
 });
 
+el("btn-backfill-casual").addEventListener("click", e => {
+  e.preventDefault();
+  startJob("summarise_backfill_casual", () => apiFetch("/api/summarise", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_type: "ollama", batch: 20, mode: "backfill_casual" }),
+  }));
+});
+
 
 // ── Job polling ───────────────────────────────
 
@@ -543,6 +559,14 @@ el("dbg-btn-summarise-ollama").addEventListener("click", () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model_type: "ollama", batch: 20 }),
+  }));
+});
+
+el("dbg-btn-backfill-casual").addEventListener("click", () => {
+  startJob("summarise_backfill_casual", () => apiFetch("/api/summarise", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_type: "ollama", batch: 20, mode: "backfill_casual" }),
   }));
 });
 

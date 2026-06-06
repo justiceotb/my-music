@@ -26,6 +26,7 @@
               <li><a href="#" id="btn-lyrics-new">Fetch lyrics for new songs</a></li>
               <li><a href="#" id="btn-lyrics-all">Fetch lyrics for all (retry)</a></li>
               <li><a href="#" id="btn-summarise-ollama">Summarise</a></li>
+              <li><a href="#" id="btn-backfill-casual">Backfill casual lines</a></li>
             </ul>
           </details>
         </li>
@@ -71,6 +72,12 @@
             <h4>Summarise — Ollama</h4>
             <p>Run thematic summarisation for all unsummarised tracks with lyrics.</p>
             <button class="outline" id="dbg-btn-summarise-ollama">Run</button>
+          </article>
+
+          <article class="debug-script-card">
+            <h4>Backfill casual lines</h4>
+            <p>Add casual one-liner to tracks that already have a summary but are missing it.</p>
+            <button class="outline" id="dbg-btn-backfill-casual">Run</button>
           </article>
 
           <article class="debug-script-card">
@@ -179,6 +186,7 @@
       </header>
       <div id="modal-tags"></div>
       <p id="modal-summary"></p>
+      <p id="modal-casual" class="modal-casual"></p>
       <details>
         <summary>Lyrics</summary>
         <pre id="modal-lyrics"></pre>

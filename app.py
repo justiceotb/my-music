@@ -289,6 +289,10 @@ def api_summarise():
     ollama_model = data.get("ollama_model", os.environ.get("OLLAMA_MODEL", "llama3"))
     ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
     batch = str(data.get("batch", 20))
+    mode = data.get("mode", "")
+
+    if model_type == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
 
     cmd = [
         sys.executable, "summarise.py",
@@ -298,11 +302,14 @@ def api_summarise():
         "--db", DB_PATH,
         "--batch", batch,
     ]
-    if model_type == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
-        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
+    if mode == "backfill_casual":
+        cmd.append("--backfill-casual")
+        job_id = "summarise_backfill_casual"
+    else:
+        job_id = "summarise"
 
-    _start_job("summarise", cmd)
-    return jsonify({"job_id": "summarise"})
+    _start_job(job_id, cmd)
+    return jsonify({"job_id": job_id})
 
 
 @app.route("/api/job/<job_id>")
