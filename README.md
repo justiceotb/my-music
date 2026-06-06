@@ -212,11 +212,13 @@ Open `http://localhost:5000` after starting the app.
 
 ## Cloudflare Tunnel (optional external access)
 
-The `cloudflared` sidecar in `docker-compose.yml` is gated behind a Docker Compose profile so it's opt-in:
+The `cloudflared` sidecar in `docker-compose.yml` starts automatically alongside `music-ui`. Set `TUNNEL_TOKEN` in your `.env` file and redeploy:
 
 ```bash
-# Set TUNNEL_TOKEN in .env (from Cloudflare Zero Trust dashboard → Tunnels)
-docker compose --profile tunnel up -d
+# .env
+TUNNEL_TOKEN=your_token_here
+
+docker compose up -d
 ```
 
 Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to restrict who can reach the UI externally.
