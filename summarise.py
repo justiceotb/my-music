@@ -30,7 +30,7 @@ log = logging.getLogger("summarise")
 SYSTEM_PROMPT = """You are a music analyst. Given a song's title, artist, album, and lyrics,
 produce a JSON object with exactly two keys:
   "summary": a 3-5 sentence thematic analysis covering mood, imagery, and subject matter
-  "theme_tags": a list of 3-8 short lowercase tag strings (e.g. "longing", "travel", "loss", "alcohol")
+  "theme_tags": a list of 3-8 short lowercase tag strings (e.g. "travel", "loss", "alcohol", "love")
 
 Respond ONLY with valid JSON. No markdown fences, no extra text."""
 
@@ -136,7 +136,7 @@ def summarise(
 
                 summary = result.get("summary", "")
                 theme_tags = json.dumps(result.get("theme_tags", []))
-                log.debug("Response for track %d: summary_len=%d tags=%s", track_id, len(summary), theme_tags)
+                log.debug("Response for track %d: summary=%s tags=%s", track_id, summary, theme_tags)
 
                 conn.execute(
                     """
