@@ -275,6 +275,12 @@ function hideJobBanner() {
   clearInterval(jobPollTimer);
 }
 
+function updateJobOutput(text) {
+  const out = el("job-output");
+  out.textContent = text || "";
+  out.scrollTop = out.scrollHeight;
+}
+
 function pollJob(jobId) {
   clearInterval(jobPollTimer);
   jobPollTimer = setInterval(async () => {
@@ -282,18 +288,22 @@ function pollJob(jobId) {
       const job = await apiFetch(`/api/job/${jobId}`);
       if (job.status === "running") {
         showJobBanner("Running…");
+        updateJobOutput(job.output);
       } else if (job.status === "done") {
         hideJobBanner();
         loadStats();
         loadTracks();
         loadTags();
       } else if (job.status === "error") {
-        hideJobBanner();
-        alert("Job failed:\n" + job.output);
+        showJobBanner("Job failed");
+        updateJobOutput(job.output || "(no output)");
+        clearInterval(jobPollTimer);
       }
     } catch (_) {}
   }, 2000);
 }
+
+el("job-dismiss").addEventListener("click", () => hideJobBanner());
 
 // ── Helpers ───────────────────────────────────
 

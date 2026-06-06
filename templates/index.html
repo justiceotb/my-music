@@ -37,8 +37,12 @@
   </header>
 
   <div id="job-banner" class="container-fluid job-banner hidden">
-    <progress id="job-progress"></progress>
-    <span id="job-message"></span>
+    <div class="job-banner-header">
+      <progress id="job-progress"></progress>
+      <span id="job-message"></span>
+      <button id="job-dismiss" class="secondary outline" style="margin:0;padding:0.2rem 0.75rem;font-size:0.8rem">Dismiss</button>
+    </div>
+    <pre id="job-output" class="job-output"></pre>
   </div>
 
   <main class="container-fluid">

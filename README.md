@@ -139,7 +139,7 @@ Open `http://localhost:5000` after starting the app.
 - **Albums sidebar** — click to filter by album
 - **Track cards** — show title, artist, tags, summary excerpt, and badges for lyrics/AI status
 - **Track modal** — click any card to see full lyrics and summary
-- **Actions menu** — Sync Discogs, Fetch missing lyrics, Summarise unprocessed (Ollama or Claude); progress is shown inline
+- **Actions menu** — Sync Discogs, Fetch missing lyrics, Summarise unprocessed (Ollama or Claude); live output streams into a scrollable banner so you can see exactly what's happening; errors are shown inline (no browser alert) with a Dismiss button
 
 ## Cloudflare Tunnel (optional external access)
 

@@ -121,18 +121,42 @@ aside {
 .badge-missing { background: #fee2e2; color: #991b1b; }
 .badge-ai      { background: #e0e7ff; color: #3730a3; }
 
+/* Actions dropdown — align to right edge so it doesn't clip off-screen */
+nav > ul:last-child details.dropdown > ul {
+  right: 0;
+  left: auto;
+}
+
 /* Job banner */
 .job-banner {
   padding: 0.5rem 1rem;
   background: var(--pico-secondary-background);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.job-banner-header {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.job-banner progress {
+.job-banner-header progress {
   flex: 1;
   margin: 0;
+}
+
+.job-output {
+  max-height: 10rem;
+  overflow-y: auto;
+  font-size: 0.75rem;
+  margin: 0;
+  padding: 0.5rem;
+  background: var(--pico-code-background);
+  border-radius: var(--pico-border-radius);
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .hidden { display: none !important; }
