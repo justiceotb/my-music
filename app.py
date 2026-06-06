@@ -29,6 +29,7 @@ DB_PATH = os.environ.get("DB_PATH", "music.db")
 
 # Simple in-process job tracker so the UI can poll status
 _jobs: dict[str, dict] = {}
+_procs: dict[str, subprocess.Popen] = {}
 
 
 def _run_job(job_id: str, cmd: list[str]) -> None:
@@ -38,13 +39,18 @@ def _run_job(job_id: str, cmd: list[str]) -> None:
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, bufsize=1
         )
+        _procs[job_id] = proc
         for line in proc.stdout:
             _jobs[job_id]["output"] += line
         proc.wait(timeout=3600)
-        _jobs[job_id]["status"] = "done" if proc.returncode == 0 else "error"
+        if _jobs[job_id]["status"] != "stopped":
+            _jobs[job_id]["status"] = "done" if proc.returncode == 0 else "error"
     except Exception as ex:
-        _jobs[job_id]["status"] = "error"
+        if _jobs[job_id]["status"] != "stopped":
+            _jobs[job_id]["status"] = "error"
         _jobs[job_id]["output"] += str(ex)
+    finally:
+        _procs.pop(job_id, None)
 
 
 def _start_job(job_id: str, cmd: list[str]) -> None:
@@ -266,6 +272,17 @@ def api_job_status(job_id: str):
     if not job:
         return jsonify({"status": "not_started"})
     return jsonify(job)
+
+
+@app.route("/api/stop/<job_id>", methods=["POST"])
+def api_stop_job(job_id: str):
+    proc = _procs.get(job_id)
+    if proc:
+        proc.terminate()
+        if job_id in _jobs:
+            _jobs[job_id]["status"] = "stopped"
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "reason": "not running"})
 
 
 # ──────────────────────────────────────────────

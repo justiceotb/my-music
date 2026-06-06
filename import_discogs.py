@@ -99,7 +99,7 @@ def import_collection(token: str, db_path: str) -> None:
                             INSERT INTO tracks (album_id, position, title, artists)
                             VALUES (?, ?, ?, ?)
                             """,
-                            (rid, track.position, track.title, track_artists or None),
+                            (rid, track.position, track.title, track_artists or artists_sort or None),
                         )
                         tracks_added += 1
                 except Exception as track_ex:
