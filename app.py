@@ -42,6 +42,8 @@ def _run_job(job_id: str, cmd: list[str]) -> None:
         _procs[job_id] = proc
         for line in proc.stdout:
             _jobs[job_id]["output"] += line
+            sys.stdout.write(f"[{job_id}] {line}")
+            sys.stdout.flush()
         proc.wait(timeout=3600)
         if _jobs[job_id]["status"] != "stopped":
             _jobs[job_id]["status"] = "done" if proc.returncode == 0 else "error"

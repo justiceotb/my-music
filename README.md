@@ -162,3 +162,13 @@ docker compose --profile tunnel up -d
 ```
 
 Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to restrict who can reach the UI externally.
+
+## Container Logs (Portainer)
+
+All background job output (Discogs sync, lyrics fetch, summarise) is teed to the container's stdout so it appears in Portainer's log view in real time. Log lines are prefixed with the job ID, e.g. `[lyrics] 2026-01-01T00:00:00Z [DEBUG] Querying Genius: …`.
+
+`fetch_lyrics.py` uses Python's `logging` module at DEBUG level, so you'll see:
+- Token preview and client initialisation on startup
+- Per-track Genius query attempts with artist/title/track_id
+- Detailed error context on 403 (token preview included) and other exceptions
+- Batch commit summaries
