@@ -8,7 +8,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Fetches lyrics via syncedlyrics (lrclib, netease) for every track — no API token required
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by artist, album, title, lyrics, or theme tag; click any track for full lyrics and summary; one-click Summarise button in track detail modal
-- Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling
+- Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
 - Filter chips (Has lyrics, No lyrics, Tagged) with a Reset filters button to clear all active selections
 - Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
 - Song list shows current page and total pages with First/Last/±10 jump buttons
@@ -22,9 +22,9 @@ my-music/
 ├── all-songs.py          # Original Discogs → Excel exporter (unchanged)
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
-├── fetch_lyrics_ovh.py   # lyrics.ovh lyrics fetcher
-├── fetch_lyrics_genius.py  # Genius lyrics fetcher (search_songs + lyrics() API)
 ├── fetch_lyrics_synced.py  # syncedlyrics fetcher - lrclib/netease, no token required
+├── fetch_lyrics_ovh.py   # Archived — lyrics.ovh fetcher (not wired in)
+├── fetch_lyrics_genius.py  # Archived — Genius fetcher (not wired in)
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)

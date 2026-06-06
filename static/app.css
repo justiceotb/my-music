@@ -111,6 +111,48 @@ header.container-fluid .version-badge {
   overflow-y: auto;
 }
 
+/* Tags header: count + sort buttons */
+#tags-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+#tags-total {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  white-space: nowrap;
+}
+
+#tags-sort-btns {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tags-sort {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #4b5563;
+  background: transparent;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tags-sort:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+.tags-sort.active {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border-color: #2563eb;
+}
+
 .tag-pill {
   font-size: 0.8rem;
   font-weight: 400;

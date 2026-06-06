@@ -27,7 +27,7 @@ from db import init_db, get_connection
 from version import __version__
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%SZ",
 )
@@ -120,6 +120,12 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
     total_errors = 0
 
     where_clause = "" if retry_all else "WHERE t.lyrics_fetched_at IS NULL"
+    total_tracks = conn.execute(
+        f"SELECT COUNT(*) FROM tracks t JOIN albums a ON a.discogs_id = t.album_id {where_clause}"
+    ).fetchone()[0]
+    print(f"{total_tracks} tracks to process", flush=True)
+    track_num = 0
+
     while True:
         rows = conn.execute(
             f"""
@@ -133,12 +139,10 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
         ).fetchall()
 
         if not rows:
-            log.debug("No unprocessed tracks remaining - exiting loop")
             break
 
-        log.info("Processing batch of %d tracks…", len(rows))
-
         for row in rows:
+            track_num += 1
             track_id = row["id"]
             title = row["title"]
             artist = clean_artist(row["artists"] or row["artists_sort"] or "")
@@ -151,17 +155,15 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
                 if lyrics:
                     source = "syncedlyrics"
                     total_fetched += 1
-                    log.info("  ✓ %s - %s (lyrics_len=%d)", artist, title, len(lyrics))
-                    print(f"  ✓ {artist} - {title}")
+                    print(f"  [{track_num}/{total_tracks}] ✓ {artist} - {title}", flush=True)
                 else:
                     total_not_found += 1
-                    log.debug("  ✗ Not found: %s - %s", artist, title)
-                    print(f"  ✗ Not found: {artist} - {title}")
+                    print(f"  [{track_num}/{total_tracks}] ✗ Not found: {artist} - {title}", flush=True)
             except Exception as ex:
                 source = "error"
                 total_errors += 1
-                log.warning("  ! Error for %s - %s: %s", artist, title, ex, exc_info=True)
-                print(f"  ! Error for {artist} - {title}: {ex}")
+                log.warning("Error for %s - %s: %s", artist, title, ex, exc_info=True)
+                print(f"  [{track_num}/{total_tracks}] ! Error for {artist} - {title}: {ex}", flush=True)
 
             conn.execute(
                 """
@@ -175,17 +177,13 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
             time.sleep(0.5)
 
         conn.commit()
-        log.info(
-            "Batch committed. Running totals - found: %d, not found: %d, errors: %d",
-            total_fetched, total_not_found, total_errors,
-        )
         print(
             f"  Batch committed. Running totals - "
-            f"found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}"
+            f"found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}",
+            flush=True,
         )
 
     conn.close()
-    log.info("Done. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
     print(
         f"\nDone. Found: {total_fetched}, not found: {total_not_found}, "
         f"errors: {total_errors}"

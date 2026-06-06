@@ -66,31 +66,57 @@ async function loadAlbums() {
 
 // ── Tag cloud ─────────────────────────────────
 
+let allTags = [];
+let tagsSort = "count-desc";
+
+function renderTags() {
+  const container = el("tags");
+  container.innerHTML = "";
+
+  const sorted = [...allTags].sort((a, b) => {
+    if (tagsSort === "count-asc")  return a.count - b.count;
+    if (tagsSort === "alpha")      return a.tag.localeCompare(b.tag);
+    return b.count - a.count; // count-desc default
+  });
+
+  sorted.forEach(({ tag, count }) => {
+    const span = document.createElement("span");
+    span.className = "tag-pill";
+    if (state.tag === tag) span.classList.add("active");
+    span.textContent = `${tag} (${count})`;
+    span.addEventListener("click", () => {
+      if (state.tag === tag) {
+        state.tag = null;
+        span.classList.remove("active");
+      } else {
+        container.querySelectorAll(".tag-pill").forEach(x => x.classList.remove("active"));
+        state.tag = tag;
+        span.classList.add("active");
+      }
+      state.page = 1;
+      updateResetBtn();
+      loadTracks();
+    });
+    container.appendChild(span);
+  });
+}
+
 async function loadTags() {
   try {
-    const tags = await apiFetch("/api/tags");
-    const container = el("tags");
-    container.innerHTML = "";
-    // Show top 40 tags
-    tags.slice(0, 40).forEach(({ tag, count }) => {
-      const span = document.createElement("span");
-      span.className = "tag-pill";
-      span.textContent = `${tag} (${count})`;
-      span.addEventListener("click", () => {
-        if (state.tag === tag) {
-          state.tag = null;
-          span.classList.remove("active");
-        } else {
-          container.querySelectorAll(".tag-pill").forEach(x => x.classList.remove("active"));
-          state.tag = tag;
-          span.classList.add("active");
-        }
-        state.page = 1;
-        updateResetBtn();
-        loadTracks();
+    allTags = await apiFetch("/api/tags");
+    const total = el("tags-total");
+    if (total) total.textContent = `${allTags.length} unique tags`;
+
+    document.querySelectorAll(".tags-sort").forEach(btn => {
+      btn.addEventListener("click", () => {
+        tagsSort = btn.dataset.sort;
+        document.querySelectorAll(".tags-sort").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderTags();
       });
-      container.appendChild(span);
     });
+
+    renderTags();
   } catch (_) {}
 }
 

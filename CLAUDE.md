@@ -2,7 +2,7 @@
 
 ## Project overview
 
-A personal vinyl collection app. Imports a Discogs collection into SQLite, fetches lyrics from lyrics.ovh, generates AI thematic summaries via Ollama or Claude, and serves a Flask web UI. Runs in Docker / Portainer.
+A personal vinyl collection app. Imports a Discogs collection into SQLite, fetches lyrics via syncedlyrics, generates AI thematic summaries via Ollama or Claude, and serves a Flask web UI. Runs in Docker / Portainer.
 
 ## Key files
 
@@ -12,8 +12,9 @@ A personal vinyl collection app. Imports a Discogs collection into SQLite, fetch
 | `db.py` | Shared SQLite helpers - schema init, connection factory. |
 | `import_discogs.py` | Discogs → SQLite importer (incremental, safe to re-run). |
 | `enrich_discogs.py` | Back-fills missing album fields from Discogs release pages. |
-| `fetch_lyrics.py` | Fetches lyrics from lyrics.ovh for unprocessed tracks. Resumable - only touches rows where `lyrics_fetched_at IS NULL`. No API token required. Uses Python `logging` at DEBUG level; output appears in Portainer container logs. |
-| `fetch_lyrics_genius.py` | Archived Genius-based lyrics fetcher (reference only, not wired in). |
+| `fetch_lyrics_synced.py` | Active lyrics fetcher. Uses syncedlyrics (lrclib, NetEase providers). Resumable - only touches rows where `lyrics_fetched_at IS NULL`. No API token required. |
+| `fetch_lyrics_ovh.py` | **Archived** - lyrics.ovh fetcher. Do not read or modify unless explicitly asked. |
+| `fetch_lyrics_genius.py` | **Archived** - Genius-based lyrics fetcher. Do not read or modify unless explicitly asked. |
 | `summarise.py` | AI thematic summariser - Ollama (default) or Claude. Produces 3–5 sentence summary + JSON tag list per track. |
 | `version.py` | Single source of truth for semver. Imported by all modules. **Must be bumped with every code change.** |
 | `all-songs.py` | Original Discogs → Excel exporter (legacy, kept unchanged). |
