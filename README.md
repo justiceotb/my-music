@@ -80,7 +80,7 @@ Point Portainer at `docker-compose.yml` and stack it from there.
 | Variable | Required | Description |
 |---|---|---|
 | `DISCOGS_TOKEN` | Yes (for sync) | Discogs user token — [get one here](https://www.discogs.com/settings/developers) |
-| `GENIUS_TOKEN` | Yes (for lyrics) | Genius client access token — [get one here](https://genius.com/api-clients) |
+| `GENIUS_TOKEN` | Yes (for lyrics) | Genius **Client Access Token** (not a user OAuth token) — [get one here](https://genius.com/api-clients) |
 | `ANTHROPIC_API_KEY` | Claude mode only | Anthropic API key |
 | `OLLAMA_HOST` | No | Ollama URL (default `http://host.docker.internal:11434`) |
 | `OLLAMA_MODEL` | No | Ollama model name (default `llama3`) |

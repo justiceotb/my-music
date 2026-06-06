@@ -29,6 +29,8 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
 
     genius = lyricsgenius.Genius(
         genius_token,
+        verbose=False,
+        timeout=10,
         skip_non_songs=True,
         excluded_terms=["(Remix)", "(Live)"],
         remove_section_headers=True,
