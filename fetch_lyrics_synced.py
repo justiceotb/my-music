@@ -22,6 +22,16 @@ import time
 from datetime import datetime, timezone
 
 import syncedlyrics
+import syncedlyrics.providers.base as _sl_base
+import requests
+
+# syncedlyrics hardcodes a 10s read timeout which regularly times out on lrclib.
+# Patch TimeoutSession to use (5s connect, 30s read) before any provider is instantiated.
+def _patched_timeout_request(self, method, url, **kwargs):
+    kwargs.setdefault("timeout", (5, 30))
+    return requests.Session.request(self, method, url, **kwargs)
+
+_sl_base.TimeoutSession.request = _patched_timeout_request
 
 from db import init_db, get_connection
 from version import __version__

@@ -5,7 +5,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 ## Features
 
 - Imports your Discogs vinyl collection into a SQLite database (incremental - safe to re-run)
-- Fetches lyrics via syncedlyrics (lrclib, netease) for every track — no API token required
+- Fetches lyrics via syncedlyrics (lrclib, netease) for every track — no API token required; lrclib timeout increased to 30s
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by artist, album, title, lyrics, or theme tag; click any track for full lyrics and summary; one-click Summarise button in track detail modal
 - Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
