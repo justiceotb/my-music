@@ -1,5 +1,5 @@
-"""
-enrich_discogs.py — Back-fill missing album fields from Discogs.
+﻿"""
+enrich_discogs.py - Back-fill missing album fields from Discogs.
 
 Finds albums in the local DB that have empty or null fields (artists_sort,
 year, styles, format) and re-fetches them from Discogs to fill in the gaps.

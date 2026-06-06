@@ -1,4 +1,4 @@
-services:
+﻿services:
   music-ui:
     build: .
     ports:
@@ -13,7 +13,7 @@ services:
       GENIUS_TOKEN: ${GENIUS_TOKEN:-}
       # Required only for Claude summarise mode
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      # Ollama — host.docker.internal lets the container reach Ollama on the host machine
+      # Ollama - host.docker.internal lets the container reach Ollama on the host machine
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3}
       DB_PATH: /app/data/music.db

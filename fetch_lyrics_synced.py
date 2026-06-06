@@ -1,25 +1,30 @@
 ﻿"""
-fetch_lyrics.py - Fetch lyrics from lyrics.ovh for all unprocessed tracks.
+fetch_lyrics_synced.py - Fetch lyrics via syncedlyrics for all unprocessed tracks.
+
+syncedlyrics queries multiple providers (Musixmatch, NetEase, lrclib, etc.) and
+requires no API token. Results may be LRC-formatted (timestamped); timestamps are
+stripped before storing so the DB holds plain text, consistent with other fetchers.
 
 Usage:
-    python fetch_lyrics.py
-    python fetch_lyrics.py --batch 50 --db music.db
+    python fetch_lyrics_synced.py
+    python fetch_lyrics_synced.py --batch 50 --db music.db
 
     # Ad-hoc lookup (no DB required):
-    python fetch_lyrics.py --artist "Pink Floyd" --title "Comfortably Numb"
+    python fetch_lyrics_synced.py --artist "Biffy Clyro" --title "Mountains"
 
 Resumable: only processes tracks where lyrics_fetched_at IS NULL.
 Commits after each batch so progress is never lost.
 """
 import argparse
 import logging
+import re
 import time
 from datetime import datetime, timezone
 
-import requests
+import syncedlyrics
 
-from version import __version__
 from db import init_db, get_connection
+from version import __version__
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -28,37 +33,37 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-_API_BASE = "https://api.lyrics.ovh/v1"
+_LRC_TIMESTAMP = re.compile(r"^\[\d+:\d+\.\d+\]\s*")
 
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _lookup(artist: str, title: str):
-    """Call lyrics.ovh and return (lyrics_text, source) or (None, 'not_found'/'error')."""
-    url = f"{_API_BASE}/{requests.utils.quote(artist)}/{requests.utils.quote(title)}"
+def strip_lrc(text: str) -> str:
+    """Remove LRC timestamp tags and return plain lyrics."""
+    lines = [_LRC_TIMESTAMP.sub("", line) for line in text.splitlines()]
+    return "\n".join(line for line in lines if line.strip()).strip()
+
+
+def search(artist: str, title: str) -> str | None:
+    """Return plain-text lyrics or None."""
+    query = f"{artist} {title}"
+    log.debug("syncedlyrics query: %r", query)
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json()
-            lyrics = data.get("lyrics", "").strip()
-            if lyrics:
-                return lyrics, "lyrics_ovh"
-            return None, "not_found"
-        if resp.status_code == 404:
-            return None, "not_found"
-        log.warning("Unexpected HTTP %s for %r - %r", resp.status_code, url, resp.text[:200])
-        return None, "error"
+        result = syncedlyrics.search(query, allow_plain_format=True)
     except Exception as ex:
-        log.warning("Request error for %r - %r: %s", artist, title, ex)
-        return None, "error"
+        log.warning("syncedlyrics raised for %r: %s", query, ex)
+        return None
+    if not result:
+        return None
+    return strip_lrc(result)
 
 
 def fetch_one(artist: str, title: str) -> None:
     log.debug("Ad-hoc query - artist=%r title=%r", artist, title)
-    lyrics, source = _lookup(artist, title)
-    if source == "lyrics_ovh":
+    lyrics = search(artist, title)
+    if lyrics:
         print(f"  ✓ {artist} - {title}\n")
         print(lyrics)
     else:
@@ -76,7 +81,7 @@ def fetch_lyrics(db_path: str, batch_size: int) -> None:
     while True:
         rows = conn.execute(
             """
-            SELECT t.id, t.title, t.artists, a.artists_sort, a.title as album_title
+            SELECT t.id, t.title, t.artists, a.artists_sort
             FROM tracks t
             JOIN albums a ON a.discogs_id = t.album_id
             WHERE t.lyrics_fetched_at IS NULL
@@ -96,20 +101,25 @@ def fetch_lyrics(db_path: str, batch_size: int) -> None:
             title = row["title"]
             artist = (row["artists"] or row["artists_sort"] or "").strip()
 
-            lyrics, source = _lookup(artist, title)
+            lyrics = None
+            source = "not_found"
 
-            if source == "lyrics_ovh":
-                total_fetched += 1
-                log.info("  ✓ %s - %s (lyrics_len=%d)", artist, title, len(lyrics))
-                print(f"  ✓ {artist} - {title}")
-            elif source == "not_found":
-                total_not_found += 1
-                log.debug("  ✗ Not found: %s - %s", artist, title)
-                print(f"  ✗ Not found: {artist} - {title}")
-            else:
+            try:
+                lyrics = search(artist, title)
+                if lyrics:
+                    source = "syncedlyrics"
+                    total_fetched += 1
+                    log.info("  ✓ %s - %s (lyrics_len=%d)", artist, title, len(lyrics))
+                    print(f"  ✓ {artist} - {title}")
+                else:
+                    total_not_found += 1
+                    log.debug("  ✗ Not found: %s - %s", artist, title)
+                    print(f"  ✗ Not found: {artist} - {title}")
+            except Exception as ex:
+                source = "error"
                 total_errors += 1
-                log.warning("  ! Error for %s - %s", artist, title)
-                print(f"  ! Error for {artist} - {title}")
+                log.warning("  ! Error for %s - %s: %s", artist, title, ex, exc_info=True)
+                print(f"  ! Error for {artist} - {title}: {ex}")
 
             conn.execute(
                 """
@@ -134,12 +144,15 @@ def fetch_lyrics(db_path: str, batch_size: int) -> None:
 
     conn.close()
     log.info("Done. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
-    print(f"\nDone. Found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}")
+    print(
+        f"\nDone. Found: {total_fetched}, not found: {total_not_found}, "
+        f"errors: {total_errors}"
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Fetch lyrics from lyrics.ovh for all unprocessed tracks"
+        description="Fetch lyrics via syncedlyrics for all unprocessed tracks"
     )
     parser.add_argument("--db", default="music.db", help="SQLite database path")
     parser.add_argument(

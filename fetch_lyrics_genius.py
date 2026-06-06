@@ -1,5 +1,5 @@
-"""
-fetch_lyrics.py — Fetch lyrics from Genius for all unprocessed tracks.
+﻿"""
+fetch_lyrics.py - Fetch lyrics from Genius for all unprocessed tracks.
 
 Usage:
     python fetch_lyrics.py --genius-token YOUR_TOKEN
@@ -36,17 +36,17 @@ def now_iso() -> str:
 
 
 def fetch_one(genius, artist: str, title: str) -> None:
-    log.debug("Ad-hoc query — artist=%r title=%r", artist, title)
+    log.debug("Ad-hoc query - artist=%r title=%r", artist, title)
     try:
         response = genius.search_songs(f"{title} {artist}")
         hits = (response or {}).get('hits', [])
         song_url = hits[0]['result']['url'] if hits else None
         lyrics = genius.lyrics(song_url=song_url, remove_section_headers=True) if song_url else None
         if lyrics:
-            print(f"  ✓ {artist} — {title}\n")
+            print(f"  ✓ {artist} - {title}\n")
             print(lyrics)
         else:
-            print(f"  ✗ Not found: {artist} — {title}")
+            print(f"  ✗ Not found: {artist} - {title}")
     except Exception as ex:
         print(f"  ! Error: {ex}")
         log.error("Ad-hoc lookup failed: %s", ex, exc_info=True)
@@ -87,7 +87,7 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
         ).fetchall()
 
         if not rows:
-            log.debug("No unprocessed tracks remaining — exiting loop")
+            log.debug("No unprocessed tracks remaining - exiting loop")
             break
 
         log.info("Processing batch of %d tracks…", len(rows))
@@ -109,20 +109,20 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
                 if lyrics:
                     source = "genius"
                     total_fetched += 1
-                    log.info("  ✓ %s — %s (lyrics_len=%d)", artist, title, len(lyrics))
-                    print(f"  ✓ {artist} — {title}")
+                    log.info("  ✓ %s - %s (lyrics_len=%d)", artist, title, len(lyrics))
+                    print(f"  ✓ {artist} - {title}")
                 else:
                     total_not_found += 1
-                    log.debug("  ✗ Not found: %s — %s (hits=%d)", artist, title, len(hits))
-                    print(f"  ✗ Not found: {artist} — {title}")
+                    log.debug("  ✗ Not found: %s - %s (hits=%d)", artist, title, len(hits))
+                    print(f"  ✗ Not found: {artist} - {title}")
             except Exception as ex:
                 if "403" in str(ex):
                     log.error(
-                        "403 Forbidden from Genius — rate-limited or bad token. "
+                        "403 Forbidden from Genius - rate-limited or bad token. "
                         "token_preview=%s track=%r %r | error: %s",
                         token_preview, artist, title, ex,
                     )
-                    print(f"  ! 403 Forbidden — rate-limited or bad token. Stopping run (track left unprocessed): {artist} — {title}")
+                    print(f"  ! 403 Forbidden - rate-limited or bad token. Stopping run (track left unprocessed): {artist} - {title}")
                     conn.commit()
                     conn.close()
                     log.info("Aborted. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
@@ -130,8 +130,8 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
                     return
                 source = "error"
                 total_errors += 1
-                log.warning("  ! Error for %s — %s: %s", artist, title, ex, exc_info=True)
-                print(f"  ! Error for {artist} — {title}: {ex}")
+                log.warning("  ! Error for %s - %s: %s", artist, title, ex, exc_info=True)
+                print(f"  ! Error for {artist} - {title}: {ex}")
 
             conn.execute(
                 """
@@ -146,11 +146,11 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
 
         conn.commit()
         log.info(
-            "Batch committed. Running totals — found: %d, not found: %d, errors: %d",
+            "Batch committed. Running totals - found: %d, not found: %d, errors: %d",
             total_fetched, total_not_found, total_errors,
         )
         print(
-            f"  Batch committed. Running totals — "
+            f"  Batch committed. Running totals - "
             f"found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}"
         )
 

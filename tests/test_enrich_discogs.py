@@ -1,7 +1,7 @@
-"""
+﻿"""
 Tests for enrich_discogs.py.
 
-Discogs API is fully mocked — no real token needed.
+Discogs API is fully mocked - no real token needed.
 """
 from unittest.mock import MagicMock, patch
 
@@ -97,7 +97,7 @@ def test_does_not_overwrite_existing_artist(MockClient, mock_sleep, tmp_db):
 @patch("enrich_discogs.time.sleep")
 @patch("enrich_discogs.discogs_client.Client")
 def test_nothing_to_do_when_all_complete(MockClient, mock_sleep, seeded_db):
-    """seeded_db albums already have artists_sort, year, and styles — nothing to enrich."""
+    """seeded_db albums already have artists_sort, year, and styles - nothing to enrich."""
     client = MagicMock()
     me = MagicMock()
     me.name = "testuser"

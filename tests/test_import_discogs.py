@@ -1,7 +1,7 @@
-"""
+﻿"""
 Tests for import_discogs.py.
 
-The discogs_client library is fully mocked — no real Discogs token needed.
+The discogs_client library is fully mocked - no real Discogs token needed.
 """
 from unittest.mock import MagicMock, patch
 
@@ -144,7 +144,7 @@ def test_existing_album_skipped(MockClient, mock_sleep, tmp_db):
     conn = get_connection(tmp_db)
     count = conn.execute("SELECT COUNT(*) FROM albums WHERE discogs_id = 7").fetchone()[0]
     conn.close()
-    assert count == 1  # unchanged — not doubled
+    assert count == 1  # unchanged - not doubled
 
 
 # ── styles joined correctly ───────────────────────────────────────────────────

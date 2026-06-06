@@ -21,15 +21,16 @@
   // NOTE: .env is already in .gitignore — safe to store real tokens there.
   "version": "0.2.0",
   "configurations": [
+
     {
-      "name": "Python Debugger: Current File with Arguments",
+      "name": "Python Debugger: Biffy Clyro",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
       "args": [
         "--genius-token",
-        "${env:GENIUS_TOKEN}",
+        "09iag5csxuk9LqudHubuDZJSuXBbfKWYatyZPrclAMI6wom-c3WSimcutTYCnqAh",
         "--artist",
         "Biffy Clyro",
         "--title", 

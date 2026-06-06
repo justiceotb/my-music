@@ -1,4 +1,4 @@
-# CLAUDE.md — my-music
+﻿# CLAUDE.md - my-music
 
 ## Project overview
 
@@ -9,12 +9,12 @@ A personal vinyl collection app. Imports a Discogs collection into SQLite, fetch
 | File | Purpose |
 |---|---|
 | `app.py` | Flask web UI + REST API. Spawns background jobs as subprocesses and tees their output to container stdout. |
-| `db.py` | Shared SQLite helpers — schema init, connection factory. |
+| `db.py` | Shared SQLite helpers - schema init, connection factory. |
 | `import_discogs.py` | Discogs → SQLite importer (incremental, safe to re-run). |
 | `enrich_discogs.py` | Back-fills missing album fields from Discogs release pages. |
-| `fetch_lyrics.py` | Fetches lyrics from lyrics.ovh for unprocessed tracks. Resumable — only touches rows where `lyrics_fetched_at IS NULL`. No API token required. Uses Python `logging` at DEBUG level; output appears in Portainer container logs. |
+| `fetch_lyrics.py` | Fetches lyrics from lyrics.ovh for unprocessed tracks. Resumable - only touches rows where `lyrics_fetched_at IS NULL`. No API token required. Uses Python `logging` at DEBUG level; output appears in Portainer container logs. |
 | `fetch_lyrics_genius.py` | Archived Genius-based lyrics fetcher (reference only, not wired in). |
-| `summarise.py` | AI thematic summariser — Ollama (default) or Claude. Produces 3–5 sentence summary + JSON tag list per track. |
+| `summarise.py` | AI thematic summariser - Ollama (default) or Claude. Produces 3–5 sentence summary + JSON tag list per track. |
 | `version.py` | Single source of truth for semver. Imported by all modules. **Must be bumped with every code change.** |
 | `all-songs.py` | Original Discogs → Excel exporter (legacy, kept unchanged). |
 
@@ -31,7 +31,7 @@ tracks (id, album_id, position, title, artists,
 
 ## Development workflow
 
-- **All changes go via feature branch + PR — never push directly to main.**
+- **All changes go via feature branch + PR - never push directly to main.**
 - **Bump `version.py` with every code change, no exceptions.**
 - **Keep `README.md` current with every code change.**
 
@@ -65,12 +65,12 @@ Database persists at `./data/music.db` on the host.
 
 | Variable | Required | Default | Notes |
 |---|---|---|---|
-| `DISCOGS_TOKEN` | Sync | — | Discogs user token |
-| `ANTHROPIC_API_KEY` | Claude mode | — | |
+| `DISCOGS_TOKEN` | Sync | - | Discogs user token |
+| `ANTHROPIC_API_KEY` | Claude mode | - | |
 | `OLLAMA_HOST` | No | `http://host.docker.internal:11434` | |
 | `OLLAMA_MODEL` | No | `llama3` | |
 | `DB_PATH` | No | `music.db` / `/app/data/music.db` in Docker | |
-| `TUNNEL_TOKEN` | Cloudflare tunnel | — | Optional external access via Cloudflare Zero Trust |
+| `TUNNEL_TOKEN` | Cloudflare tunnel | - | Optional external access via Cloudflare Zero Trust |
 
 ## Background jobs (app.py)
 
@@ -87,7 +87,7 @@ Jobs run as subprocesses. `_run_job` in `app.py` captures stdout+stderr and:
 
 ## Cloudflare Tunnel (optional)
 
-Gated behind a Compose profile — opt-in only:
+Gated behind a Compose profile - opt-in only:
 
 ```bash
 docker compose --profile tunnel up -d

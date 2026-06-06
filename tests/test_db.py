@@ -1,4 +1,4 @@
-"""Tests for db.py — schema init, connection factory, transaction rollback."""
+﻿"""Tests for db.py - schema init, connection factory, transaction rollback."""
 import sqlite3
 
 import pytest
