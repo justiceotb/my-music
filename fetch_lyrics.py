@@ -5,6 +5,9 @@ Usage:
     python fetch_lyrics.py --genius-token YOUR_TOKEN
     python fetch_lyrics.py --genius-token YOUR_TOKEN --batch 50 --db music.db
 
+    # Ad-hoc lookup (no DB required):
+    python fetch_lyrics.py --genius-token YOUR_TOKEN --artist "Pink Floyd" --title "Comfortably Numb"
+
 Resumable: only processes tracks where lyrics_fetched_at IS NULL.
 Commits after each batch so progress is never lost.
 """
@@ -30,6 +33,20 @@ log = logging.getLogger(__name__)
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def fetch_one(genius, artist: str, title: str) -> None:
+    log.debug("Ad-hoc query — artist=%r title=%r", artist, title)
+    try:
+        song = genius.search_song(title, artist)
+        if song and song.lyrics:
+            print(f"  ✓ {artist} — {title}\n")
+            print(song.lyrics)
+        else:
+            print(f"  ✗ Not found: {artist} — {title}")
+    except Exception as ex:
+        print(f"  ! Error: {ex}")
+        log.error("Ad-hoc lookup failed: %s", ex, exc_info=True)
 
 
 def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
@@ -154,9 +171,27 @@ def main() -> None:
     parser.add_argument(
         "--batch", type=int, default=50, help="Tracks per commit batch (default 50)"
     )
+    parser.add_argument("--artist", default=None, help="Artist name for ad-hoc lookup (requires --title)")
+    parser.add_argument("--title", default=None, help="Song title for ad-hoc lookup (requires --artist)")
     args = parser.parse_args()
 
-    fetch_lyrics(args.genius_token, args.db, args.batch)
+    if bool(args.artist) != bool(args.title):
+        parser.error("--artist and --title must be used together")
+
+    if args.artist and args.title:
+        token_preview = args.genius_token[:4] + "…" + args.genius_token[-4:] if len(args.genius_token) >= 8 else "***"
+        log.debug("Genius token: %s (len=%d)", token_preview, len(args.genius_token))
+        genius = lyricsgenius.Genius(
+            args.genius_token,
+            verbose=True,
+            timeout=10,
+            skip_non_songs=True,
+            excluded_terms=["(Remix)", "(Live)"],
+            remove_section_headers=True,
+        )
+        fetch_one(genius, args.artist, args.title)
+    else:
+        fetch_lyrics(args.genius_token, args.db, args.batch)
 
 
 if __name__ == "__main__":
