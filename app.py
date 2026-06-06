@@ -34,15 +34,17 @@ _jobs: dict[str, dict] = {}
 def _run_job(job_id: str, cmd: list[str]) -> None:
     _jobs[job_id] = {"status": "running", "output": ""}
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=3600
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1
         )
-        _jobs[job_id] = {
-            "status": "done" if result.returncode == 0 else "error",
-            "output": result.stdout + result.stderr,
-        }
+        for line in proc.stdout:
+            _jobs[job_id]["output"] += line
+        proc.wait(timeout=3600)
+        _jobs[job_id]["status"] = "done" if proc.returncode == 0 else "error"
     except Exception as ex:
-        _jobs[job_id] = {"status": "error", "output": str(ex)}
+        _jobs[job_id]["status"] = "error"
+        _jobs[job_id]["output"] += str(ex)
 
 
 def _start_job(job_id: str, cmd: list[str]) -> None:
