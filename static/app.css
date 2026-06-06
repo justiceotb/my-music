@@ -13,6 +13,10 @@
   margin-bottom: 0.5rem;
   justify-content: space-between;
   align-items: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-toggle-arrow {
@@ -23,7 +27,7 @@
   transform: rotate(180deg);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
   }

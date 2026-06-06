@@ -609,10 +609,21 @@ function escHtml(str) {
 
 const sidebarToggle = el("sidebar-toggle");
 if (sidebarToggle) {
-  sidebarToggle.addEventListener("click", () => {
+  let _touchHandled = false;
+  const doToggle = () => {
     const aside = document.querySelector("aside");
     const open = aside.classList.toggle("sidebar-open");
+    aside.style.display = open ? "block" : "";
     sidebarToggle.setAttribute("aria-expanded", String(open));
+  };
+  sidebarToggle.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    _touchHandled = true;
+    doToggle();
+    setTimeout(() => { _touchHandled = false; }, 500);
+  });
+  sidebarToggle.addEventListener("click", () => {
+    if (!_touchHandled) doToggle();
   });
 }
 
