@@ -4,8 +4,8 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # music.db lives on the host so it survives container rebuilds
-      - ./music.db:/app/music.db
+      # data/ dir lives on the host so the DB survives container rebuilds
+      - ./data:/app/data
     environment:
       # Required for Sync action
       DISCOGS_TOKEN: ${DISCOGS_TOKEN:-}
@@ -16,8 +16,14 @@ services:
       # Ollama — host.docker.internal lets the container reach Ollama on the host machine
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3}
-      DB_PATH: /app/music.db
+      DB_PATH: /app/data/music.db
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Optional: Cloudflare Tunnel for external HTTPS access.
   # Set TUNNEL_TOKEN in your .env file (from the Cloudflare Zero Trust dashboard).

@@ -21,6 +21,7 @@ from threading import Thread
 from flask import Flask, jsonify, render_template, request
 
 from db import init_db, get_connection
+from version import __version__
 
 app = Flask(__name__)
 
@@ -54,7 +55,7 @@ def _start_job(job_id: str, cmd: list[str]) -> None:
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", version=__version__)
 
 
 # ──────────────────────────────────────────────

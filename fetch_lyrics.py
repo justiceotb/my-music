@@ -13,6 +13,8 @@ import os
 import time
 from datetime import datetime, timezone
 
+from version import __version__
+
 import lyricsgenius
 
 from db import init_db, get_connection

@@ -1,6 +1,8 @@
 import discogs_client
 import openpyxl
 import argparse
+
+from version import __version__
 # import json
 
 # DISCOGS_TOKEN = ''

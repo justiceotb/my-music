@@ -23,6 +23,7 @@ my-music/
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)
 ├── static/app.js         # UI logic
 ├── static/app.css        # Styles
+├── version.py            # Single source of truth for semver (imported by all modules)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -65,6 +66,13 @@ cp .env.example .env   # fill in your tokens
 docker compose up -d   # → http://localhost:5000
 ```
 
+The database is stored in `./data/music.db` on the host — created automatically on first run and persisted across container rebuilds.
+
+> **Migrating from a previous install?** If you have an existing `./music.db` file, move it before restarting:
+> ```bash
+> mkdir -p data && mv music.db data/music.db
+> ```
+
 Point Portainer at `docker-compose.yml` and stack it from there.
 
 ## Environment Variables
@@ -76,7 +84,7 @@ Point Portainer at `docker-compose.yml` and stack it from there.
 | `ANTHROPIC_API_KEY` | Claude mode only | Anthropic API key |
 | `OLLAMA_HOST` | No | Ollama URL (default `http://host.docker.internal:11434`) |
 | `OLLAMA_MODEL` | No | Ollama model name (default `llama3`) |
-| `DB_PATH` | No | SQLite path inside container (default `music.db`) |
+| `DB_PATH` | No | SQLite path inside container (default `music.db`; Docker uses `/app/data/music.db`) |
 | `TUNNEL_TOKEN` | Cloudflare only | Cloudflare Tunnel token |
 
 ## Script Reference

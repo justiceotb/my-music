@@ -14,6 +14,8 @@ from datetime import datetime, timezone
 
 import discogs_client
 
+from version import __version__
+
 from db import init_db, transaction
 
 

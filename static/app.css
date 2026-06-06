@@ -140,6 +140,9 @@ aside {
 /* Stats */
 .stats-text { font-size: 0.8rem; color: var(--pico-muted-color); }
 
+/* Version badge */
+.version-badge { font-size: 0.75rem; color: var(--pico-muted-color); opacity: 0.6; }
+
 /* Result info */
 #result-info {
   font-size: 0.85rem;

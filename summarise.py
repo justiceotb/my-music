@@ -21,6 +21,7 @@ import time
 from datetime import datetime, timezone
 
 from db import init_db, get_connection
+from version import __version__
 
 SYSTEM_PROMPT = """You are a music analyst. Given a song's title, artist, album, and lyrics,
 produce a JSON object with exactly two keys:
