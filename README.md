@@ -1,4 +1,4 @@
-# My Vinyl Collection
+# My Music Meaning
 
 A local, searchable database of vinyl records enriched with lyrics and AI-generated thematic summaries. Built with Python, SQLite, Flask, and Docker.
 
@@ -195,9 +195,9 @@ Open `http://localhost:5000` after starting the app.
 - **Search bar** — searches track title, lyrics, summary, and theme tags simultaneously
 - **Tag cloud** — click any tag to filter; click again to clear
 - **Albums sidebar** — click to filter by album
-- **Track cards** — show title, artist, tags, summary excerpt, and badges for lyrics/AI status
+- **Track cards** — show title, artist, tags, summary excerpt, and status chips (lyrics found/missing, tags, summarised)
 - **Track modal** — click any card to see full lyrics and summary
-- **Actions menu** — Sync Discogs, Fetch missing lyrics, Summarise unprocessed (Ollama or Claude); live output streams into a scrollable banner so you can see exactly what's happening; a **Stop** button terminates the running job mid-flight, and a **Dismiss** button clears the banner when done
+- **Actions menu** — Sync Discogs, Fetch missing lyrics, Summarise — Ollama (local), Summarise — With Claude; live output streams into a scrollable banner so you can see exactly what's happening; a **Stop** button terminates the running job mid-flight, and a **Dismiss** button clears the banner when done
 - **Album sort** — sort the albums sidebar independently (Artist / Album / Year)
 - **Track sort** — sort the track listing independently (Artist / Album)
 

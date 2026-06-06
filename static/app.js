@@ -135,14 +135,18 @@ function renderTracks({ tracks, total, page, per_page }) {
       ? '<span class="badge badge-ai">summarised</span>'
       : "";
 
+    const tagsBadge = t.theme_tags && JSON.parse(t.theme_tags).length
+      ? '<span class="badge badge-tags">tags</span>'
+      : "";
+
     const trackArtist = t.artists || t.artists_sort || "";
     card.innerHTML = `
       <h4>${escHtml(t.title)}</h4>
       <div class="track-meta">
         ${trackArtist ? escHtml(trackArtist) + ' &mdash; ' : ''}${escHtml(t.album)} (${t.year || "?"})
         ${t.position ? `&middot; ${escHtml(t.position)}` : ""}
-        ${lyricsBadge} ${aiBadge}
       </div>
+      <div class="track-chips">${lyricsBadge}${aiBadge}${tagsBadge}</div>
       ${t.summary ? `<p class="track-summary">${escHtml(t.summary.slice(0, 200))}…</p>` : ""}
       <div class="track-tags">${tagsHtml}</div>
     `;
