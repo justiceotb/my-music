@@ -109,6 +109,7 @@ def api_tracks():
     album_id = request.args.get("album_id", type=int)
     q = (request.args.get("q") or "").strip()
     tag = (request.args.get("tag") or "").strip()
+    filter_mode = (request.args.get("filter") or "").strip()
     page = request.args.get("page", 1, type=int)
     sort = request.args.get("sort", "artist")
     per_page = 50
@@ -133,6 +134,13 @@ def api_tracks():
         # theme_tags is a JSON array stored as text; LIKE is good enough for tags
         clauses.append("t.theme_tags LIKE ?")
         params.append(f'%"{tag}"%')
+
+    if filter_mode == "has_lyrics":
+        clauses.append("t.lyrics_source = 'lyrics_ovh'")
+    elif filter_mode == "no_lyrics":
+        clauses.append("(t.lyrics_source IN ('not_found', 'error') OR t.lyrics_source IS NULL)")
+    elif filter_mode == "has_tags":
+        clauses.append("(t.theme_tags IS NOT NULL AND t.theme_tags != '[]')")
 
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 

@@ -195,6 +195,7 @@ Open `http://localhost:5000` after starting the app.
 
 - **Search bar** — searches track title, lyrics, summary, and theme tags simultaneously
 - **Tag cloud** — click any tag to filter; click again to clear
+- **Filter chips** — one-click filters above the track list: *Has lyrics*, *No lyrics*, *Tagged*; toggleable, compose with search/album/tag filters
 - **Albums sidebar** — click to filter by album
 - **Track cards** — show title, artist, tags, summary excerpt, and status chips (lyrics found/missing, tags, summarised)
 - **Track modal** — click any card to see full lyrics and summary

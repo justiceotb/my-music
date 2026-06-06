@@ -4,6 +4,7 @@ const state = {
   q: "",
   albumId: null,
   tag: null,
+  filter: null,
   page: 1,
   trackSort: "artist",
   albumSort: "artist",
@@ -97,6 +98,7 @@ async function loadTracks() {
   if (state.q)       params.set("q", state.q);
   if (state.albumId) params.set("album_id", state.albumId);
   if (state.tag)     params.set("tag", state.tag);
+  if (state.filter)  params.set("filter", state.filter);
 
   const data = await apiFetch(`/api/tracks?${params}`);
   renderTracks(data);
@@ -125,9 +127,9 @@ function renderTracks({ tracks, total, page, per_page }) {
         ).join("")
       : "";
 
-    const lyricsBadge = t.lyrics_source === "genius"
+    const lyricsBadge = t.lyrics_source === "lyrics_ovh"
       ? '<span class="badge badge-found">lyrics</span>'
-      : t.lyrics_source === "not_found"
+      : t.lyrics_source === "not_found" || t.lyrics_source === "error"
         ? '<span class="badge badge-missing">no lyrics</span>'
         : "";
 
@@ -237,6 +239,24 @@ el("search").addEventListener("input", debounce(e => {
   state.page = 1;
   loadTracks();
 }, 300));
+
+// ── Filter chips ─────────────────────────────
+
+document.querySelectorAll(".filter-chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const val = chip.dataset.filter;
+    if (state.filter === val) {
+      state.filter = null;
+      chip.classList.remove("active");
+    } else {
+      document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+      state.filter = val;
+      chip.classList.add("active");
+    }
+    state.page = 1;
+    loadTracks();
+  });
+});
 
 // ── Sort ──────────────────────────────────────
 
