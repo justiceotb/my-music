@@ -1,4 +1,4 @@
-/* app.js — Music collection UI */
+﻿/* app.js - Music collection UI */
 
 const state = {
   q: "",
@@ -47,7 +47,7 @@ async function loadAlbums() {
   albums.forEach(a => {
     const li = document.createElement("li");
     li.dataset.id = a.discogs_id;
-    const artist = a.artists_sort ? `${a.artists_sort} — ` : "";
+    const artist = a.artists_sort ? `${a.artists_sort} - ` : "";
     li.textContent = `${artist}${a.title} (${a.year || "?"})`;
     ul.appendChild(li);
   });
@@ -207,7 +207,7 @@ async function openModal(trackId) {
   const t = await apiFetch(`/api/track/${trackId}`);
   el("modal-title").textContent = t.title;
   el("modal-meta").textContent =
-    `${t.artists_sort || t.artists || ""} — ${t.album} (${t.year || "?"})`;
+    `${t.artists_sort || t.artists || ""} - ${t.album} (${t.year || "?"})`;
 
   const link = el("modal-discogs-link");
   if (t.album_id) {

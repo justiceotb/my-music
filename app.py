@@ -1,15 +1,15 @@
-"""
-app.py — Flask web UI for the music collection.
+﻿"""
+app.py - Flask web UI for the music collection.
 
 Run locally:
     python app.py
 
 Or via Docker (see docker-compose.yml). Environment variables:
-    DISCOGS_TOKEN     — for the Sync action
-    ANTHROPIC_API_KEY — for Claude summarise mode (optional)
-    OLLAMA_HOST       — Ollama server URL (default http://localhost:11434)
-    OLLAMA_MODEL      — Ollama model name (default llama3)
-    DB_PATH           — SQLite path (default music.db)
+    DISCOGS_TOKEN     - for the Sync action
+    ANTHROPIC_API_KEY - for Claude summarise mode (optional)
+    OLLAMA_HOST       - Ollama server URL (default http://localhost:11434)
+    OLLAMA_MODEL      - Ollama model name (default llama3)
+    DB_PATH           - SQLite path (default music.db)
 """
 import json
 import os
@@ -68,7 +68,7 @@ def index():
 
 
 # ──────────────────────────────────────────────
-# API — data
+# API - data
 # ──────────────────────────────────────────────
 
 @app.route("/api/albums")
@@ -217,7 +217,7 @@ def api_tags():
 
 
 # ──────────────────────────────────────────────
-# API — actions (run background scripts)
+# API - actions (run background scripts)
 # ──────────────────────────────────────────────
 
 @app.route("/api/sync", methods=["POST"])

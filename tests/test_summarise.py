@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for summarise.py.
 
 Ollama (OpenAI SDK) and Claude (Anthropic SDK) are fully mocked.
@@ -125,7 +125,7 @@ def test_malformed_json_marks_track(MockOpenAI, mock_sleep, tmp_db):
 @patch("summarise.time.sleep")
 @patch("openai.OpenAI")
 def test_skips_already_processed(MockOpenAI, mock_sleep, seeded_db):
-    """The 'So What' track in seeded_db already has ai_processed_at set — should not be touched."""
+    """The 'So What' track in seeded_db already has ai_processed_at set - should not be touched."""
     mock_client = MockOpenAI.return_value
 
     summarise(
@@ -139,5 +139,5 @@ def test_skips_already_processed(MockOpenAI, mock_sleep, seeded_db):
 
     # 'Something' has lyrics but no summary → will be processed
     # 'So What' already processed → must not be called again
-    # Only the 'Something' track calls the API — call count = 1
+    # Only the 'Something' track calls the API - call count = 1
     assert mock_client.chat.completions.create.call_count == 1

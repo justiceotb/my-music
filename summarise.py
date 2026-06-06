@@ -1,5 +1,5 @@
-"""
-summarise.py — Generate thematic summaries and tags for tracks that have lyrics.
+﻿"""
+summarise.py - Generate thematic summaries and tags for tracks that have lyrics.
 
 Usage:
     python summarise.py                                  # Ollama + llama3 (default)
@@ -11,8 +11,8 @@ Resumable: only processes tracks where ai_processed_at IS NULL and lyrics IS NOT
 Commits after each batch.
 
 Output stored in DB as:
-  summary    — 3-5 sentence thematic description
-  theme_tags — JSON array of short tag strings e.g. ["longing", "travel"]
+  summary    - 3-5 sentence thematic description
+  theme_tags - JSON array of short tag strings e.g. ["longing", "travel"]
 """
 import argparse
 import json
@@ -141,11 +141,11 @@ def summarise(
                     (summary, theme_tags, now_iso(), track_id),
                 )
                 total_ok += 1
-                print(f"  ✓ {artist} — {title}: {result.get('theme_tags', [])}")
+                print(f"  ✓ {artist} - {title}: {result.get('theme_tags', [])}")
 
             except Exception as ex:
                 total_err += 1
-                print(f"  ! Error for {artist} — {title}: {ex}")
+                print(f"  ! Error for {artist} - {title}: {ex}")
                 # Mark as attempted with empty summary so we don't retry forever
                 # Remove this if you'd rather retry on next run
                 conn.execute(

@@ -1,5 +1,5 @@
-"""
-import_discogs.py — Pull vinyl collection from Discogs into music.db.
+﻿"""
+import_discogs.py - Pull vinyl collection from Discogs into music.db.
 
 Usage:
     python import_discogs.py --token YOUR_DISCOGS_TOKEN
@@ -46,7 +46,7 @@ def import_collection(token: str, db_path: str) -> None:
         existing = {row[0] for row in conn.execute("SELECT discogs_id FROM albums")}
 
     for release in me.collection_folders[0].releases:
-        time.sleep(1.0)  # polite delay — Discogs rate limit
+        time.sleep(1.0)  # polite delay - Discogs rate limit
         rid = release.release.id
 
         # Skip duplicates within the same Discogs collection response
@@ -107,7 +107,7 @@ def import_collection(token: str, db_path: str) -> None:
 
             albums_added += 1
         except Exception as ex:
-            print(f"  [skip] release {rid} — {ex}", flush=True)
+            print(f"  [skip] release {rid} - {ex}", flush=True)
             continue
 
     print(

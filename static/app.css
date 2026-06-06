@@ -1,4 +1,4 @@
-/* Layout */
+﻿/* Layout */
 .layout {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -184,7 +184,7 @@ header.container-fluid .version-badge {
 .badge-ai      { background: #e0e7ff; color: #3730a3; }
 .badge-tags    { background: #ccfbf1; color: #0f766e; }
 
-/* Actions dropdown — align to right edge so it doesn't clip off-screen */
+/* Actions dropdown - align to right edge so it doesn't clip off-screen */
 nav > ul:last-child details.dropdown > ul {
   right: 0;
   left: auto;

@@ -1,10 +1,10 @@
-# My Music Meaning
+﻿# My Music Meaning
 
 A local, searchable database of vinyl records enriched with lyrics and AI-generated thematic summaries. Built with Python, SQLite, Flask, and Docker.
 
 ## Features
 
-- Imports your Discogs vinyl collection into a SQLite database (incremental — safe to re-run)
+- Imports your Discogs vinyl collection into a SQLite database (incremental - safe to re-run)
 - Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for every track (no API token required)
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by title, lyrics content, or theme tag; browse by album; click any track for full lyrics and summary
@@ -18,7 +18,8 @@ my-music/
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
 ├── fetch_lyrics.py       # lyrics.ovh lyrics fetcher
-├── fetch_lyrics_genius.py  # Archived Genius fetcher (reference only)
+├── fetch_lyrics_genius.py  # Genius lyrics fetcher (search_songs + lyrics() API)
+├── fetch_lyrics_synced.py  # syncedlyrics fetcher - multi-provider, no token required
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)
@@ -58,7 +59,7 @@ The test suite runs entirely without Docker, live APIs, or real tokens. All exte
 
 ### Setup
 
-**Option A — uv (recommended if you already have uv):**
+**Option A - uv (recommended if you already have uv):**
 ```bash
 uv venv
 uv pip install -r requirements.txt -r requirements-dev.txt
@@ -67,7 +68,7 @@ uv pip install -r requirements.txt -r requirements-dev.txt
 .venv/bin/pytest tests/ -v          # macOS/Linux
 ```
 
-**Option B — standard pip:**
+**Option B - standard pip:**
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/ -v
@@ -75,10 +76,10 @@ pytest tests/ -v
 
 ### VS Code
 
-Open `.vscode/launch.json` — it has three pre-configured launch targets:
-- **pytest (all tests)** — runs the full suite; reads tokens from your OS environment or a `.env` file (tests don't need them, but the Flask app does)
-- **pytest (current file)** — runs the currently open test file
-- **Flask (local)** — starts the app locally; fill in your tokens in the `env` block
+Open `.vscode/launch.json` - it has three pre-configured launch targets:
+- **pytest (all tests)** - runs the full suite; reads tokens from your OS environment or a `.env` file (tests don't need them, but the Flask app does)
+- **pytest (current file)** - runs the currently open test file
+- **Flask (local)** - starts the app locally; fill in your tokens in the `env` block
 
 **To set tokens without touching shell profiles:**
 1. Create a `.env` file in the project root (already in `.gitignore`):
@@ -86,7 +87,7 @@ Open `.vscode/launch.json` — it has three pre-configured launch targets:
    DISCOGS_TOKEN=your_token_here
    ANTHROPIC_API_KEY=sk-ant-...
    ```
-2. Install the [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) extension — VS Code then reads these values automatically for the `${env:VAR}` references in `launch.json`.
+2. Install the [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) extension - VS Code then reads these values automatically for the `${env:VAR}` references in `launch.json`.
 
 ---
 
@@ -115,7 +116,7 @@ cp .env.example .env   # fill in your tokens
 docker compose up -d   # → http://localhost:5000
 ```
 
-The database is stored in `./data/music.db` on the host — created automatically on first run and persisted across container rebuilds.
+The database is stored in `./data/music.db` on the host - created automatically on first run and persisted across container rebuilds.
 
 > **Migrating from a previous install?** If you have an existing `./music.db` file, move it before restarting:
 > ```bash
@@ -128,7 +129,7 @@ Point Portainer at `docker-compose.yml` and stack it from there.
 
 | Variable | Required | Description |
 |---|---|---|
-| `DISCOGS_TOKEN` | Yes (for sync) | Discogs user token — [get one here](https://www.discogs.com/settings/developers) |
+| `DISCOGS_TOKEN` | Yes (for sync) | Discogs user token - [get one here](https://www.discogs.com/settings/developers) |
 | `ANTHROPIC_API_KEY` | Claude mode only | Anthropic API key |
 | `OLLAMA_HOST` | No | Ollama URL (default `http://host.docker.internal:11434`) |
 | `OLLAMA_MODEL` | No | Ollama model name (default `llama3`) |
@@ -139,7 +140,7 @@ Point Portainer at `docker-compose.yml` and stack it from there.
 
 ### `import_discogs.py`
 
-Pulls your entire Discogs collection into `music.db`. Skips albums already present — safe to re-run after adding new records.
+Pulls your entire Discogs collection into `music.db`. Skips albums already present - safe to re-run after adding new records.
 
 ```bash
 python import_discogs.py --token TOKEN [--db music.db]
@@ -148,12 +149,12 @@ python import_discogs.py --token TOKEN [--db music.db]
 
 ### `fetch_lyrics.py`
 
-Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for all tracks where `lyrics_fetched_at IS NULL`. No API token required. Commits after every batch — fully resumable if interrupted.
+Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for all tracks where `lyrics_fetched_at IS NULL`. No API token required. Commits after every batch - fully resumable if interrupted.
 
 ```bash
 python fetch_lyrics.py [--batch 50] [--db music.db]
 
-# Ad-hoc lookup — no DB required, prints lyrics to stdout:
+# Ad-hoc lookup - no DB required, prints lyrics to stdout:
 python fetch_lyrics.py --artist "Pink Floyd" --title "Comfortably Numb"
 ```
 
@@ -174,7 +175,7 @@ python summarise.py --batch 20 --db music.db
 
 ### `enrich_discogs.py`
 
-Back-fills missing album fields (`artists_sort`, `year`, `styles`, `format`) for albums already in the DB. Queries each album's Discogs release page and writes any newly found data. Falls back to building the artist name from the `artists` list when `artists_sort` is absent — which covers a large number of releases where Discogs only populates individual artist objects, not the sort field.
+Back-fills missing album fields (`artists_sort`, `year`, `styles`, `format`) for albums already in the DB. Queries each album's Discogs release page and writes any newly found data. Falls back to building the artist name from the `artists` list when `artists_sort` is absent - which covers a large number of releases where Discogs only populates individual artist objects, not the sort field.
 
 ```bash
 python enrich_discogs.py --token TOKEN [--db music.db]
@@ -193,15 +194,15 @@ python all-songs.py --token TOKEN [--file tracks.xlsx]
 
 Open `http://localhost:5000` after starting the app.
 
-- **Search bar** — searches track title, lyrics, summary, and theme tags simultaneously
-- **Tag cloud** — click any tag to filter; click again to clear
-- **Filter chips** — one-click filters above the track list: *Has lyrics*, *No lyrics*, *Tagged*; toggleable, compose with search/album/tag filters
-- **Albums sidebar** — click to filter by album
-- **Track cards** — show title, artist, tags, summary excerpt, and status chips (lyrics found/missing, tags, summarised)
-- **Track modal** — click any card to see full lyrics and summary
-- **Actions menu** — Sync Discogs, Fetch missing lyrics, Summarise — Ollama (local), Summarise — With Claude; live output streams into a scrollable banner so you can see exactly what's happening; a **Stop** button terminates the running job mid-flight, and a **Dismiss** button clears the banner when done
-- **Album sort** — sort the albums sidebar independently (Artist / Album / Year)
-- **Track sort** — sort the track listing independently (Artist / Album)
+- **Search bar** - searches track title, lyrics, summary, and theme tags simultaneously
+- **Tag cloud** - click any tag to filter; click again to clear
+- **Filter chips** - one-click filters above the track list: *Has lyrics*, *No lyrics*, *Tagged*; toggleable, compose with search/album/tag filters
+- **Albums sidebar** - click to filter by album
+- **Track cards** - show title, artist, tags, summary excerpt, and status chips (lyrics found/missing, tags, summarised)
+- **Track modal** - click any card to see full lyrics and summary
+- **Actions menu** - Sync Discogs, Fetch missing lyrics, Summarise - Ollama (local), Summarise - With Claude; live output streams into a scrollable banner so you can see exactly what's happening; a **Stop** button terminates the running job mid-flight, and a **Dismiss** button clears the banner when done
+- **Album sort** - sort the albums sidebar independently (Artist / Album / Year)
+- **Track sort** - sort the track listing independently (Artist / Album)
 
 ## Cloudflare Tunnel (optional external access)
 

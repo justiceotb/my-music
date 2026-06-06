@@ -1,7 +1,7 @@
-"""
+﻿"""
 Tests for fetch_lyrics.py.
 
-All HTTP calls and time.sleep are mocked — no network access needed.
+All HTTP calls and time.sleep are mocked - no network access needed.
 """
 from unittest.mock import MagicMock, patch
 

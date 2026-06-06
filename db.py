@@ -1,5 +1,5 @@
-"""
-Shared database helpers — schema creation and connection factory.
+﻿"""
+Shared database helpers - schema creation and connection factory.
 """
 import os
 import sqlite3
