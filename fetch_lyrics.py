@@ -9,6 +9,7 @@ Resumable: only processes tracks where lyrics_fetched_at IS NULL.
 Commits after each batch so progress is never lost.
 """
 import argparse
+import logging
 import os
 import time
 from datetime import datetime, timezone
@@ -19,6 +20,13 @@ import lyricsgenius
 
 from db import init_db, get_connection
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%SZ",
+)
+log = logging.getLogger(__name__)
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -26,6 +34,10 @@ def now_iso() -> str:
 
 def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
     init_db(db_path)
+
+    token_preview = genius_token[:4] + "…" + genius_token[-4:] if len(genius_token) >= 8 else "***"
+    log.debug("Genius token: %s (len=%d)", token_preview, len(genius_token))
+    log.debug("Initialising lyricsgenius client (timeout=10s, skip_non_songs=True)")
 
     genius = lyricsgenius.Genius(
         genius_token,
@@ -43,7 +55,6 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
     total_errors = 0
 
     while True:
-        # Load next batch of unprocessed tracks
         rows = conn.execute(
             """
             SELECT t.id, t.title, t.artists, a.artists_sort, a.title as album_title
@@ -56,38 +67,48 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
         ).fetchall()
 
         if not rows:
+            log.debug("No unprocessed tracks remaining — exiting loop")
             break
 
-        print(f"Processing batch of {len(rows)} tracks…")
+        log.info("Processing batch of %d tracks…", len(rows))
 
         for row in rows:
             track_id = row["id"]
             title = row["title"]
-            # Prefer track-level artist, fall back to album artist
             artist = (row["artists"] or row["artists_sort"] or "").strip()
 
             lyrics = None
             source = "not_found"
 
+            log.debug("Querying Genius: track_id=%s artist=%r title=%r", track_id, artist, title)
             try:
                 song = genius.search_song(title, artist)
                 if song and song.lyrics:
                     lyrics = song.lyrics
                     source = "genius"
                     total_fetched += 1
+                    log.info("  ✓ %s — %s (lyrics_len=%d)", artist, title, len(lyrics))
                     print(f"  ✓ {artist} — {title}")
                 else:
                     total_not_found += 1
+                    log.debug("  ✗ Not found: %s — %s (song=%r)", artist, title, song)
                     print(f"  ✗ Not found: {artist} — {title}")
             except Exception as ex:
                 if "403" in str(ex):
+                    log.error(
+                        "403 Forbidden from Genius — rate-limited or bad token. "
+                        "token_preview=%s track=%r %r | error: %s",
+                        token_preview, artist, title, ex,
+                    )
                     print(f"  ! 403 Forbidden — rate-limited or bad token. Stopping run (track left unprocessed): {artist} — {title}")
                     conn.commit()
                     conn.close()
+                    log.info("Aborted. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
                     print(f"\nAborted. Found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}")
                     return
                 source = "error"
                 total_errors += 1
+                log.warning("  ! Error for %s — %s: %s", artist, title, ex, exc_info=True)
                 print(f"  ! Error for {artist} — {title}: {ex}")
 
             conn.execute(
@@ -99,16 +120,20 @@ def fetch_lyrics(genius_token: str, db_path: str, batch_size: int) -> None:
                 (lyrics, source, now_iso(), track_id),
             )
 
-            # Polite delay to avoid hammering the Genius API
             time.sleep(0.5)
 
         conn.commit()
+        log.info(
+            "Batch committed. Running totals — found: %d, not found: %d, errors: %d",
+            total_fetched, total_not_found, total_errors,
+        )
         print(
             f"  Batch committed. Running totals — "
             f"found: {total_fetched}, not found: {total_not_found}, errors: {total_errors}"
         )
 
     conn.close()
+    log.info("Done. Found: %d, not found: %d, errors: %d", total_fetched, total_not_found, total_errors)
     print(
         f"\nDone. Found: {total_fetched}, not found: {total_not_found}, "
         f"errors: {total_errors}"
