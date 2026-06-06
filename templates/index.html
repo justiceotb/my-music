@@ -54,7 +54,7 @@
         </section>
 
         <section id="album-list">
-          <small>Albums</small>
+          <small>Albums <span id="album-count"></span></small>
           <label class="sort-label">
             Sort:
             <select id="album-sort-select">
@@ -107,6 +107,11 @@
         <summary>Lyrics</summary>
         <pre id="modal-lyrics"></pre>
       </details>
+      <footer class="modal-actions">
+        <button id="modal-btn-lyrics" class="outline secondary">Fetch Lyrics</button>
+        <button id="modal-btn-summarise-ollama" class="outline secondary">Summarise (Ollama)</button>
+        <button id="modal-btn-summarise-claude" class="outline secondary">Summarise (Claude)</button>
+      </footer>
     </article>
   </dialog>
 
