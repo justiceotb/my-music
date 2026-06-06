@@ -241,6 +241,13 @@ def api_enrich():
     return jsonify({"job_id": job_id})
 
 
+@app.route("/api/fetch-lyrics/<int:track_id>", methods=["POST"])
+def api_fetch_lyrics_track(track_id: int):
+    job_id = f"fetch_lyrics_{track_id}"
+    _start_job(job_id, [sys.executable, "fetch_lyrics_synced.py", "--db", DB_PATH, "--track-id", str(track_id)])
+    return jsonify({"job_id": job_id})
+
+
 @app.route("/api/fetch-lyrics", methods=["POST"])
 def api_fetch_lyrics():
     job_id = "fetch_lyrics"
@@ -250,6 +257,27 @@ def api_fetch_lyrics():
     cmd = [sys.executable, "fetch_lyrics_synced.py", "--db", DB_PATH, "--batch", batch]
     if retry_all:
         cmd.append("--retry-all")
+    _start_job(job_id, cmd)
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/summarise/<int:track_id>", methods=["POST"])
+def api_summarise_track(track_id: int):
+    data = request.json or {}
+    model_type = data.get("model_type", "ollama")
+    if model_type == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
+    ollama_model = data.get("ollama_model", os.environ.get("OLLAMA_MODEL", "llama3"))
+    ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    job_id = f"summarise_{track_id}"
+    cmd = [
+        sys.executable, "summarise.py",
+        "--model-type", model_type,
+        "--ollama-model", ollama_model,
+        "--ollama-host", ollama_host,
+        "--db", DB_PATH,
+        "--track-id", str(track_id),
+    ]
     _start_job(job_id, cmd)
     return jsonify({"job_id": job_id})
 

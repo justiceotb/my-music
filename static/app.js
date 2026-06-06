@@ -42,6 +42,7 @@ async function loadStats() {
 
 async function loadAlbums() {
   const albums = await apiFetch(`/api/albums?sort=${state.albumSort}`);
+  el("album-count").textContent = `(${albums.length})`;
   const ul = el("albums");
   ul.innerHTML = '<li data-id="" class="active">All albums</li>';
   albums.forEach(a => {
@@ -105,7 +106,10 @@ async function loadTracks() {
 }
 
 function renderTracks({ tracks, total, page, per_page }) {
-  el("result-info").textContent = `${total} tracks found`;
+  const pages = Math.ceil(total / per_page);
+  el("result-info").textContent = pages > 1
+    ? `${total} tracks found — page ${page} of ${pages}`
+    : `${total} tracks found`;
 
   const container = el("tracks");
   container.innerHTML = "";
@@ -189,8 +193,10 @@ function renderPagination(total, page, per_page) {
     return btn;
   };
 
+  pag.appendChild(mkBtn("« First", 1, page === 1));
+  if (pages > 10 && page > 10) pag.appendChild(mkBtn("−10", page - 10));
   pag.appendChild(mkBtn("‹ Prev", page - 1, page === 1));
-  // Show a window of pages
+
   const start = Math.max(1, page - 2);
   const end   = Math.min(pages, page + 2);
   for (let p = start; p <= end; p++) {
@@ -198,12 +204,18 @@ function renderPagination(total, page, per_page) {
     if (p === page) btn.classList.add("active");
     pag.appendChild(btn);
   }
+
   pag.appendChild(mkBtn("Next ›", page + 1, page === pages));
+  if (pages > 10 && page <= pages - 10) pag.appendChild(mkBtn("+10", page + 10));
+  pag.appendChild(mkBtn("Last »", pages, page === pages));
 }
 
 // ── Modal ─────────────────────────────────────
 
+let currentModalTrackId = null;
+
 async function openModal(trackId) {
+  currentModalTrackId = trackId;
   const t = await apiFetch(`/api/track/${trackId}`);
   el("modal-title").textContent = t.title;
   el("modal-meta").textContent =
@@ -230,6 +242,35 @@ async function openModal(trackId) {
 el("modal-close").addEventListener("click", () => el("track-modal").close());
 el("track-modal").addEventListener("click", e => {
   if (e.target === el("track-modal")) el("track-modal").close();
+});
+
+el("modal-btn-lyrics").addEventListener("click", () => {
+  if (!currentModalTrackId) return;
+  el("track-modal").close();
+  const jobId = `fetch_lyrics_${currentModalTrackId}`;
+  startJob(jobId, () => apiFetch(`/api/fetch-lyrics/${currentModalTrackId}`, { method: "POST" }));
+});
+
+el("modal-btn-summarise-ollama").addEventListener("click", () => {
+  if (!currentModalTrackId) return;
+  el("track-modal").close();
+  const jobId = `summarise_${currentModalTrackId}`;
+  startJob(jobId, () => apiFetch(`/api/summarise/${currentModalTrackId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_type: "ollama" }),
+  }));
+});
+
+el("modal-btn-summarise-claude").addEventListener("click", () => {
+  if (!currentModalTrackId) return;
+  el("track-modal").close();
+  const jobId = `summarise_${currentModalTrackId}`;
+  startJob(jobId, () => apiFetch(`/api/summarise/${currentModalTrackId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_type: "claude" }),
+  }));
 });
 
 // ── Search ────────────────────────────────────

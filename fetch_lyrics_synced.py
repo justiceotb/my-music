@@ -34,6 +34,12 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 _LRC_TIMESTAMP = re.compile(r"^\[\d+:\d+\.\d+\]\s*")
+_ARTIST_SUFFIX = re.compile(r"\s*\(\d+\)\s*$")
+
+
+def clean_artist(artist: str) -> str:
+    """Strip Discogs disambiguation suffixes like 'Alice Cooper (2)'."""
+    return _ARTIST_SUFFIX.sub("", artist).strip()
 
 
 def now_iso() -> str:
@@ -58,6 +64,41 @@ def search(artist: str, title: str, providers: list[str] | None = None) -> str |
     if not result:
         return None
     return strip_lrc(result)
+
+
+def fetch_one_track(db_path: str, track_id: int, providers: list[str] | None = None) -> None:
+    """Fetch and save lyrics for a single track by DB id."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    row = conn.execute(
+        """SELECT t.id, t.title, t.artists, a.artists_sort
+           FROM tracks t JOIN albums a ON a.discogs_id = t.album_id
+           WHERE t.id = ?""",
+        (track_id,),
+    ).fetchone()
+    if not row:
+        print(f"Track {track_id} not found")
+        conn.close()
+        return
+
+    title = row["title"]
+    artist = clean_artist(row["artists"] or row["artists_sort"] or "")
+    log.debug("Single-track fetch: track_id=%d artist=%r title=%r", track_id, artist, title)
+
+    lyrics = search(artist, title, providers)
+    source = "syncedlyrics" if lyrics else "not_found"
+
+    conn.execute(
+        "UPDATE tracks SET lyrics = ?, lyrics_source = ?, lyrics_fetched_at = ? WHERE id = ?",
+        (lyrics, source, now_iso(), track_id),
+    )
+    conn.commit()
+    conn.close()
+
+    if lyrics:
+        print(f"  ✓ {artist} - {title}")
+    else:
+        print(f"  ✗ Not found: {artist} - {title}")
 
 
 def fetch_one(artist: str, title: str, providers: list[str] | None = None) -> None:
@@ -100,7 +141,7 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
         for row in rows:
             track_id = row["id"]
             title = row["title"]
-            artist = (row["artists"] or row["artists_sort"] or "").strip()
+            artist = clean_artist(row["artists"] or row["artists_sort"] or "")
 
             lyrics = None
             source = "not_found"
@@ -167,16 +208,19 @@ def main() -> None:
         "-p", "--providers",
         nargs="+",
         type=str.lower,
-        default=["lrclib", "netease", "megalobiz", "genius"],
-        choices=["musixmatch", "lrclib", "netease", "megalobiz", "genius"],
-        help="Providers to search (default: all except musixmatch)",
+        default=["lrclib", "netease"],
+        choices=["musixmatch", "lrclib", "netease"],
+        help="Providers to search (default: lrclib, netease)",
     )
+    parser.add_argument("--track-id", type=int, default=None,
+                        help="Fetch lyrics for a single track by DB id and exit")
     args = parser.parse_args()
 
-    if bool(args.artist) != bool(args.title):
+    if args.track_id is not None:
+        fetch_one_track(args.db, args.track_id, args.providers)
+    elif bool(args.artist) != bool(args.title):
         parser.error("--artist and --title must be used together")
-
-    if args.artist and args.title:
+    elif args.artist and args.title:
         fetch_one(args.artist, args.title, args.providers)
     else:
         fetch_lyrics(args.db, args.batch, args.providers, retry_all=args.retry_all)

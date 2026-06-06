@@ -5,10 +5,12 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 ## Features
 
 - Imports your Discogs vinyl collection into a SQLite database (incremental - safe to re-run)
-- Fetches lyrics from [lyrics.ovh](https://github.com/NTag/lyrics.ovh) for every track (no API token required)
+- Fetches lyrics via syncedlyrics (lrclib, netease) for every track — no API token required
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by artist, album, title, lyrics, or theme tag; browse by album; click any track for full lyrics and summary
-- All background tasks (sync, lyrics, summarise) are triggerable from the UI
+- Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
+- Album count shown in the sidebar; song list shows current page and total pages with First/Last/±10 jump buttons
+- All background tasks (sync, lyrics, summarise) are triggerable from the UI; Discogs artist disambiguation suffixes (e.g. "Alice Cooper (2)") are stripped before lyric searches
 
 ## Project Structure
 
@@ -19,7 +21,7 @@ my-music/
 ├── import_discogs.py     # Discogs → SQLite importer
 ├── fetch_lyrics_ovh.py   # lyrics.ovh lyrics fetcher
 ├── fetch_lyrics_genius.py  # Genius lyrics fetcher (search_songs + lyrics() API)
-├── fetch_lyrics_synced.py  # syncedlyrics fetcher - lrclib/netease/megalobiz/genius, no token required
+├── fetch_lyrics_synced.py  # syncedlyrics fetcher - lrclib/netease, no token required
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)
