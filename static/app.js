@@ -437,6 +437,109 @@ el("job-stop").addEventListener("click", () => {
 
 el("job-dismiss").addEventListener("click", () => hideJobBanner());
 
+// ── Debug view ────────────────────────────────
+
+let debugVisible = false;
+
+function showDebugView() {
+  debugVisible = true;
+  el("debug-view").classList.remove("hidden");
+  document.querySelector(".layout").classList.add("hidden");
+  el("btn-debug").classList.add("active");
+  loadDebugHealth();
+}
+
+function hideDebugView() {
+  debugVisible = false;
+  el("debug-view").classList.add("hidden");
+  document.querySelector(".layout").classList.remove("hidden");
+  el("btn-debug").classList.remove("active");
+}
+
+el("btn-debug").addEventListener("click", () => {
+  if (debugVisible) hideDebugView(); else showDebugView();
+});
+
+el("btn-debug-back").addEventListener("click", hideDebugView);
+
+async function loadDebugHealth() {
+  const grid = el("debug-health-grid");
+  try {
+    const h = await apiFetch("/api/debug/health");
+    const cards = [
+      { label: "Total tracks",   value: h.total_tracks,    cls: "stat-info" },
+      { label: "Total albums",   value: h.total_albums,    cls: "stat-info" },
+      { label: "With lyrics",    value: h.with_lyrics,     cls: h.with_lyrics  === h.total_tracks ? "stat-ok" : "stat-warn" },
+      { label: "No lyrics",      value: h.no_lyrics,       cls: h.no_lyrics    === 0 ? "stat-ok" : "stat-warn" },
+      { label: "Pending lyrics", value: h.pending_lyrics,  cls: h.pending_lyrics === 0 ? "stat-ok" : "stat-warn" },
+      { label: "With summary",   value: h.with_summary,    cls: h.with_summary === h.with_lyrics ? "stat-ok" : "stat-warn" },
+      { label: "With tags",      value: h.with_tags,       cls: h.with_tags    === h.with_summary ? "stat-ok" : "stat-warn" },
+      { label: "Pending summary",value: h.pending_summary, cls: h.pending_summary === 0 ? "stat-ok" : "stat-warn" },
+      { label: "Stuck (no data)",value: h.stuck_summary,   cls: h.stuck_summary  === 0 ? "stat-ok" : "stat-bad" },
+    ];
+    grid.innerHTML = cards.map(({ label, value, cls }) => `
+      <div class="debug-stat-card ${cls}">
+        <div class="stat-value">${value}</div>
+        <div class="stat-label">${label}</div>
+      </div>
+    `).join("");
+  } catch (err) {
+    grid.innerHTML = `<p class="muted">Failed to load health data: ${escHtml(err.message)}</p>`;
+  }
+}
+
+el("btn-reset-stuck").addEventListener("click", async () => {
+  const result = el("reset-stuck-result");
+  result.textContent = "Resetting…";
+  try {
+    const r = await apiFetch("/api/debug/reset-stuck", { method: "POST" });
+    result.textContent = `Reset ${r.reset} track(s). Re-run Summarise to process them.`;
+    loadDebugHealth();
+  } catch (err) {
+    result.textContent = `Error: ${err.message}`;
+  }
+});
+
+el("dbg-btn-summarise-ollama").addEventListener("click", () => {
+  startJob("summarise", () => apiFetch("/api/summarise", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_type: "ollama", batch: 20 }),
+  }));
+});
+
+el("dbg-btn-summarise-claude").addEventListener("click", () => {
+  startJob("summarise", () => apiFetch("/api/summarise", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_type: "claude", batch: 20 }),
+  }));
+});
+
+el("dbg-btn-lyrics-new").addEventListener("click", () => {
+  startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch: 50 }),
+  }));
+});
+
+el("dbg-btn-lyrics-all").addEventListener("click", () => {
+  startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch: 50, retry_all: true }),
+  }));
+});
+
+el("dbg-btn-sync").addEventListener("click", () => {
+  startJob("sync", () => apiFetch("/api/sync", { method: "POST" }));
+});
+
+el("dbg-btn-enrich").addEventListener("click", () => {
+  startJob("enrich", () => apiFetch("/api/enrich", { method: "POST" }));
+});
+
 // ── Helpers ───────────────────────────────────
 
 function escHtml(str) {

@@ -279,6 +279,138 @@ nav > ul:last-child details.dropdown > ul {
   word-break: break-all;
 }
 
+/* Debug toggle button */
+.debug-toggle {
+  font-size: 1rem;
+  padding: 0.2rem 0.6rem;
+  line-height: 1;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.debug-toggle:hover,
+.debug-toggle.active {
+  border-color: #9ca3af;
+  color: #fff;
+  background: #374151;
+}
+
+/* Debug view */
+#debug-view {
+  padding: 1.5rem 0;
+}
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.debug-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.debug-header button {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.debug-section {
+  margin-bottom: 2rem;
+}
+
+.debug-section h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--pico-muted-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  padding-bottom: 0.4rem;
+}
+
+/* Health stat cards */
+.debug-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.debug-stat-card {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.debug-stat-card .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.debug-stat-card .stat-label {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.debug-stat-card.stat-ok    .stat-value { color: #059669; }
+.debug-stat-card.stat-warn  .stat-value { color: #d97706; }
+.debug-stat-card.stat-bad   .stat-value { color: #dc2626; }
+.debug-stat-card.stat-info  .stat-value { color: var(--pico-primary); }
+
+.debug-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.debug-actions-row button {
+  margin: 0;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+/* Script runner cards */
+.debug-script-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.debug-script-card {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  margin: 0;
+}
+
+.debug-script-card h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.debug-script-card p {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color);
+  margin: 0 0 0.75rem;
+}
+
+.debug-script-card button {
+  margin: 0;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
 .hidden { display: none !important; }
 
 /* Stats */
