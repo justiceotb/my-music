@@ -346,7 +346,7 @@ def api_group_tags():
     model_type = data.get("model_type", "ollama")
     ollama_model = data.get("ollama_model", os.environ.get("OLLAMA_MODEL", "llama3"))
     ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-    chunk = str(data.get("chunk", 0))
+    chunk = str(data.get("chunk", 200))
     if model_type == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
         return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
     cmd = [
