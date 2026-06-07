@@ -8,6 +8,7 @@ const state = {
   page: 1,
   trackSort: "artist",
   albumSort: "artist",
+  themeFilter: null,
 };
 
 let jobPollTimer = null;
@@ -117,6 +118,35 @@ async function loadTags() {
     });
 
     renderTags();
+  } catch (_) {}
+}
+
+async function loadThemes() {
+  try {
+    const themes = await apiFetch("/api/themes");
+    if (!themes.length) return;
+
+    const sel = el("theme-filter");
+    themes.forEach(({ theme, tag_count }) => {
+      const opt = document.createElement("option");
+      opt.value = theme;
+      opt.textContent = `${theme} (${tag_count})`;
+      sel.appendChild(opt);
+    });
+    el("theme-filter-row").classList.remove("hidden");
+
+    sel.addEventListener("change", async () => {
+      state.themeFilter = sel.value || null;
+      const url = state.themeFilter
+        ? `/api/tags?theme=${encodeURIComponent(state.themeFilter)}`
+        : "/api/tags";
+      try {
+        allTags = await apiFetch(url);
+        const total = el("tags-total");
+        if (total) total.textContent = `${allTags.length} unique tags`;
+        renderTags();
+      } catch (_) {}
+    });
   } catch (_) {}
 }
 
@@ -609,22 +639,13 @@ function escHtml(str) {
 
 const sidebarToggle = el("sidebar-toggle");
 if (sidebarToggle) {
-  let _touchHandled = false;
   const doToggle = () => {
     const aside = document.querySelector("aside");
     const open = aside.classList.toggle("sidebar-open");
     aside.style.display = open ? "block" : "";
     sidebarToggle.setAttribute("aria-expanded", String(open));
   };
-  sidebarToggle.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    _touchHandled = true;
-    doToggle();
-    setTimeout(() => { _touchHandled = false; }, 500);
-  });
-  sidebarToggle.addEventListener("click", () => {
-    if (!_touchHandled) doToggle();
-  });
+  sidebarToggle.addEventListener("click", doToggle);
 }
 
 // ── Tag merge ─────────────────────────────────
@@ -714,9 +735,60 @@ el("btn-suggest-merges").addEventListener("click", async () => {
   }
 });
 
+// ── Group tags ────────────────────────────────
+
+el("btn-group-tags").addEventListener("click", async () => {
+  const btn = el("btn-group-tags");
+  const resultsEl = el("tag-group-results");
+  const model = el("tag-group-model").value;
+
+  btn.setAttribute("aria-busy", "true");
+  btn.disabled = true;
+  resultsEl.innerHTML = "<p class='muted'>Asking AI to group tags…</p>";
+
+  try {
+    const data = await apiFetch("/api/group-tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_type: model }),
+    });
+
+    if (data.error) {
+      resultsEl.innerHTML = `<p style="color:var(--pico-color-red-500,#ef4444)">${escHtml(data.error)}</p>`;
+      return;
+    }
+
+    const jobId = data.job_id;
+    resultsEl.innerHTML = "<p class='muted'>Job started — polling for output…</p>";
+
+    const poll = setInterval(async () => {
+      try {
+        const job = await apiFetch(`/api/job/${jobId}`);
+        const lines = escHtml(job.output || "").replace(/\n/g, "<br>");
+        resultsEl.innerHTML = `<pre style="font-size:0.8rem;white-space:pre-wrap">${lines}</pre>`;
+        if (job.status === "done" || job.status === "error" || job.status === "stopped") {
+          clearInterval(poll);
+          btn.removeAttribute("aria-busy");
+          btn.disabled = false;
+          // Reload themes dropdown
+          const themeSel = el("theme-filter");
+          themeSel.innerHTML = '<option value="">All themes</option>';
+          el("theme-filter-row").classList.add("hidden");
+          loadThemes();
+        }
+      } catch (_) {}
+    }, 2000);
+  } catch (err) {
+    resultsEl.innerHTML = `<p style="color:var(--pico-color-red-500,#ef4444)">Error: ${escHtml(err.message)}</p>`;
+    btn.removeAttribute("aria-busy");
+    btn.disabled = false;
+  }
+});
+
 // ── Init ──────────────────────────────────────
 
 (async () => {
   await Promise.all([loadStats(), loadAlbums(), loadTags()]);
+  loadThemes();
   await loadTracks();
 })();

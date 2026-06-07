@@ -198,12 +198,13 @@ def api_track(track_id: int):
 
 @app.route("/api/tags")
 def api_tags():
-    """Return all distinct theme tags sorted by frequency."""
+    """Return all distinct theme tags sorted by frequency. Optional ?theme= filter."""
+    theme = (request.args.get("theme") or "").strip()
+
     conn = get_connection(DB_PATH)
     rows = conn.execute(
         "SELECT theme_tags FROM tracks WHERE theme_tags IS NOT NULL AND theme_tags != ''"
     ).fetchall()
-    conn.close()
 
     counts: dict[str, int] = {}
     for row in rows:
@@ -213,8 +214,32 @@ def api_tags():
         except Exception:
             pass
 
-    sorted_tags = sorted(counts.items(), key=lambda x: -x[1])
+    if theme:
+        theme_tags_set = {
+            r["tag"] for r in conn.execute(
+                "SELECT tag FROM tag_themes WHERE theme = ?", (theme,)
+            ).fetchall()
+        }
+        sorted_tags = sorted(
+            ((t, c) for t, c in counts.items() if t in theme_tags_set),
+            key=lambda x: -x[1],
+        )
+    else:
+        sorted_tags = sorted(counts.items(), key=lambda x: -x[1])
+
+    conn.close()
     return jsonify([{"tag": t, "count": c} for t, c in sorted_tags])
+
+
+@app.route("/api/themes")
+def api_themes():
+    """Return all tag themes sorted by number of tags."""
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        "SELECT theme, COUNT(*) as tag_count FROM tag_themes GROUP BY theme ORDER BY tag_count DESC"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 
 # ──────────────────────────────────────────────
@@ -308,6 +333,28 @@ def api_summarise():
     else:
         job_id = "summarise"
 
+    _start_job(job_id, cmd)
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/group-tags", methods=["POST"])
+def api_group_tags():
+    data = request.json or {}
+    model_type = data.get("model_type", "ollama")
+    ollama_model = data.get("ollama_model", os.environ.get("OLLAMA_MODEL", "llama3"))
+    ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    chunk = str(data.get("chunk", 0))
+    if model_type == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "ANTHROPIC_API_KEY not set"}), 400
+    cmd = [
+        sys.executable, "group_tags.py",
+        "--model-type", model_type,
+        "--ollama-model", ollama_model,
+        "--ollama-host", ollama_host,
+        "--db", DB_PATH,
+        "--chunk", chunk,
+    ]
+    job_id = "group_tags"
     _start_job(job_id, cmd)
     return jsonify({"job_id": job_id})
 

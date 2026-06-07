@@ -10,6 +10,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Responsive web UI: search by artist, album, title, lyrics, or theme tag; click any track for full lyrics and summary; one-click Summarise button in track detail modal
 - Mobile-friendly sidebar: collapses behind a "Filters ▾" toggle on small screens so song results are immediately visible; sidebar toggle hidden on desktop
 - Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
+- Tag themes: AI groups ~1300 individual tags into ~20–30 broad themes (Mood, Instrumentation, Era, etc.); a dropdown above the tag cloud filters to tags in a selected theme
 - Tag Review & Merge tool in Debug view: asks the local AI (Ollama or Claude) to identify near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them in one click
 - Filter chips (Has lyrics, No lyrics, Tagged) with a Reset filters button to clear all active selections
 - Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
@@ -28,6 +29,7 @@ my-music/
 ├── fetch_lyrics_ovh.py   # Archived — lyrics.ovh fetcher (not wired in)
 ├── fetch_lyrics_genius.py  # Archived — Genius fetcher (not wired in)
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
+├── group_tags.py         # AI tag grouper — assigns tags to broad themes
 ├── app.py                # Flask web UI + REST API
 ├── templates/index.html  # Responsive single-page UI (Pico CSS)
 ├── static/app.js         # UI logic
@@ -58,6 +60,8 @@ tracks (id, album_id, position, title, artists,
         lyrics, lyrics_fetched_at, lyrics_source,   -- "syncedlyrics"|"lyrics_ovh"|"genius" (found) | "not_found" | "error" | NULL (unprocessed)
         summary, theme_tags,                         -- JSON array e.g. '["longing","travel"]'
         ai_processed_at)
+
+tag_themes (tag, theme)  -- maps each tag to a broad AI-generated theme category
 ```
 
 ## Running tests locally
@@ -188,6 +192,23 @@ python summarise.py --batch 20 --db music.db
 python summarise.py --backfill-casual
 ```
 
+### `group_tags.py`
+
+Groups all distinct theme tags into broad AI-generated categories (Mood, Instrumentation, Era, etc.) and stores the mapping in `tag_themes`. Run after `summarise.py` has processed your tracks. Safe to re-run — existing assignments are replaced.
+
+```bash
+# Ollama (default)
+python group_tags.py
+
+# Claude Haiku
+ANTHROPIC_API_KEY=sk-ant-... python group_tags.py --model-type claude
+
+# Options
+python group_tags.py --db music.db --chunk 200  # chunk for smaller-context models
+```
+
+The theme dropdown in the sidebar Tags panel becomes active once this has run. Selecting a theme narrows the tag cloud to only that theme's tags; clicking a tag still filters tracks normally.
+
 ### `enrich_discogs.py`
 
 Back-fills missing album fields (`artists_sort`, `year`, `styles`, `format`) for albums already in the DB. Queries each album's Discogs release page and writes any newly found data. Falls back to building the artist name from the `artists` list when `artists_sort` is absent - which covers a large number of releases where Discogs only populates individual artist objects, not the sort field.
@@ -210,7 +231,7 @@ python all-songs.py --token TOKEN [--file tracks.xlsx]
 Open `http://localhost:5000` after starting the app.
 
 - **Search bar** - searches artist, album title, track title, lyrics, and summary simultaneously
-- **Tag cloud** - click any tag to filter; click again to clear
+- **Tag cloud** - click any tag to filter; click again to clear. A **Theme** dropdown above the cloud filters visible tags to a selected theme (populated after running `group_tags.py`)
 - **Filter chips** - one-click filters above the track list: *Has lyrics*, *No lyrics*, *Tagged*; toggleable, compose with search/album/tag filters
 - **Albums sidebar** - click to filter by album
 - **Track cards** - show title, artist, tags, summary excerpt, and status chips (lyrics found/missing, tags, summarised)
