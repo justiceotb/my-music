@@ -215,8 +215,8 @@ Open `http://localhost:5000` after starting the app.
 - **Albums sidebar** - click to filter by album
 - **Track cards** - show title, artist, tags, summary excerpt, and status chips (lyrics found/missing, tags, summarised)
 - **Track modal** - click any card to see full lyrics and summary
-- **Actions menu** - Sync Discogs, Fetch missing lyrics, Summarise - Ollama (local), Summarise - With Claude; live output streams into a scrollable banner so you can see exactly what's happening; a **Stop** button terminates the running job mid-flight, and a **Dismiss** button clears the banner when done
-- **Debug ⚙ button** (header, left of Actions) - opens the Debug & Maintenance page: live DB health stats (pending lyrics, stuck summaries, etc.), a "Reset stuck summaries" button to clear tracks marked processed but with no data, and Run buttons for all background scripts
+- **Actions menu** - Sync Discogs, three Fetch lyrics modes (new / previously failed / all), Summarise, Backfill casual lines; live output streams into a scrollable banner; a **Stop** button terminates mid-flight
+- **Debug ⚙ button** (header, left of Actions) - opens the Debug & Maintenance page: live DB health stats, "Reset stuck summaries", **Download DB backup** button, and Run buttons for all background scripts
 - **Album sort** - sort the albums sidebar independently (Artist / Album / Year)
 - **Track sort** - sort the track listing independently (Artist / Album / Song)
 

@@ -17,7 +17,7 @@ import subprocess
 import sys
 from threading import Thread
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 
 from db import init_db, get_connection
 from version import __version__
@@ -254,9 +254,12 @@ def api_fetch_lyrics():
     data = request.json or {}
     batch = str(data.get("batch", 50))
     retry_all = data.get("retry_all", False)
+    retry_failed = data.get("retry_failed", False)
     cmd = [sys.executable, "fetch_lyrics_synced.py", "--db", DB_PATH, "--batch", batch]
     if retry_all:
         cmd.append("--retry-all")
+    elif retry_failed:
+        cmd.append("--retry-failed")
     _start_job(job_id, cmd)
     return jsonify({"job_id": job_id})
 
@@ -495,6 +498,18 @@ def api_debug_reset_stuck():
     conn.commit()
     conn.close()
     return jsonify({"reset": count})
+
+
+@app.route("/api/db/download")
+def api_db_download():
+    """Download the SQLite database file as a backup."""
+    import datetime
+    db_path = os.path.abspath(DB_PATH)
+    if not os.path.exists(db_path):
+        return jsonify({"error": "Database file not found"}), 404
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    download_name = f"music_backup_{timestamp}.db"
+    return send_file(db_path, as_attachment=True, download_name=download_name)
 
 
 # ──────────────────────────────────────────────

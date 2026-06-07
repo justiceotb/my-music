@@ -394,6 +394,15 @@ el("btn-lyrics-new").addEventListener("click", e => {
   }));
 });
 
+el("btn-lyrics-failed").addEventListener("click", e => {
+  e.preventDefault();
+  startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch: 50, retry_failed: true }),
+  }));
+});
+
 el("btn-lyrics-all").addEventListener("click", e => {
   e.preventDefault();
   startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
@@ -576,6 +585,14 @@ el("dbg-btn-lyrics-new").addEventListener("click", () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ batch: 50 }),
+  }));
+});
+
+el("dbg-btn-lyrics-failed").addEventListener("click", () => {
+  startJob("fetch_lyrics", () => apiFetch("/api/fetch-lyrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch: 50, retry_failed: true }),
   }));
 });
 
