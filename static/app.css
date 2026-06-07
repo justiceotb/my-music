@@ -52,6 +52,16 @@
   }
 }
 
+.theme-filter-row {
+  margin-bottom: 0.5rem;
+}
+
+.theme-filter-row select {
+  width: 100%;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 aside {
   position: sticky;
   top: 1rem;

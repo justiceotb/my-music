@@ -37,6 +37,11 @@ CREATE TABLE IF NOT EXISTS tracks (
 CREATE INDEX IF NOT EXISTS idx_tracks_album   ON tracks(album_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_lyrics  ON tracks(lyrics_fetched_at);
 CREATE INDEX IF NOT EXISTS idx_tracks_ai      ON tracks(ai_processed_at);
+
+CREATE TABLE IF NOT EXISTS tag_themes (
+    tag   TEXT PRIMARY KEY,
+    theme TEXT NOT NULL
+);
 """
 
 
@@ -59,6 +64,17 @@ def init_db(db_path: str) -> None:
             conn.commit()
         except Exception:
             pass  # Column already exists
+        # Migration: add tag_themes table
+        try:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS tag_themes (
+                    tag   TEXT PRIMARY KEY,
+                    theme TEXT NOT NULL
+                );
+            """)
+            conn.commit()
+        except Exception:
+            pass
 
 
 @contextmanager

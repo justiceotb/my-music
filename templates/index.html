@@ -128,6 +128,14 @@
           </select>
         </div>
         <div id="tag-merge-results"></div>
+        <div class="debug-actions-row" style="margin-top:0.75rem">
+          <button id="btn-group-tags" class="outline">Group tags with AI</button>
+          <select id="tag-group-model" style="width:auto;margin:0;font-size:0.85rem">
+            <option value="ollama">Ollama</option>
+            <option value="claude">Claude</option>
+          </select>
+        </div>
+        <div id="tag-group-results"></div>
       </section>
     </div>
 
@@ -148,6 +156,11 @@
           </div>
 
           <div class="sidebar-tab-panel" data-panel="tags">
+            <div id="theme-filter-row" class="theme-filter-row hidden">
+              <select id="theme-filter">
+                <option value="">All themes</option>
+              </select>
+            </div>
             <div id="tags-header">
               <span id="tags-total"></span>
               <div id="tags-sort-btns">
