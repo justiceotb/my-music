@@ -121,7 +121,13 @@ def fetch_one(artist: str, title: str, providers: list[str] | None = None) -> No
         print(f"  ✗ Not found: {artist} - {title}")
 
 
-def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = None, retry_all: bool = False) -> None:
+def fetch_lyrics(
+    db_path: str,
+    batch_size: int,
+    providers: list[str] | None = None,
+    retry_all: bool = False,
+    retry_failed: bool = False,
+) -> None:
     init_db(db_path)
     conn = get_connection(db_path)
 
@@ -129,7 +135,12 @@ def fetch_lyrics(db_path: str, batch_size: int, providers: list[str] | None = No
     total_not_found = 0
     total_errors = 0
 
-    where_clause = "" if retry_all else "WHERE t.lyrics_fetched_at IS NULL"
+    if retry_all:
+        where_clause = ""
+    elif retry_failed:
+        where_clause = "WHERE t.lyrics_source IN ('not_found', 'error')"
+    else:
+        where_clause = "WHERE t.lyrics_fetched_at IS NULL"
     total_tracks = conn.execute(
         f"SELECT COUNT(*) FROM tracks t JOIN albums a ON a.discogs_id = t.album_id {where_clause}"
     ).fetchone()[0]
@@ -209,7 +220,9 @@ def main() -> None:
         "--batch", type=int, default=50, help="Tracks per commit batch (default 50)"
     )
     parser.add_argument("--retry-all", action="store_true",
-                        help="Re-fetch lyrics even for tracks already attempted")
+                        help="Re-fetch lyrics for all tracks, including those with lyrics")
+    parser.add_argument("--retry-failed", action="store_true",
+                        help="Re-fetch lyrics only for tracks previously marked not_found or error")
     parser.add_argument("--artist", default=None, help="Artist name for ad-hoc lookup (requires --title)")
     parser.add_argument("--title", default=None, help="Song title for ad-hoc lookup (requires --artist)")
     parser.add_argument(
@@ -231,7 +244,7 @@ def main() -> None:
     elif args.artist and args.title:
         fetch_one(args.artist, args.title, args.providers)
     else:
-        fetch_lyrics(args.db, args.batch, args.providers, retry_all=args.retry_all)
+        fetch_lyrics(args.db, args.batch, args.providers, retry_all=args.retry_all, retry_failed=args.retry_failed)
 
 
 if __name__ == "__main__":

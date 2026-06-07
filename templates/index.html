@@ -24,6 +24,7 @@
               <li><a href="#" id="btn-sync">Sync Discogs</a></li>
               <li><a href="#" id="btn-enrich">Enrich missing data from Discogs</a></li>
               <li><a href="#" id="btn-lyrics-new">Fetch lyrics for new songs</a></li>
+              <li><a href="#" id="btn-lyrics-failed">Fetch lyrics for previously failed</a></li>
               <li><a href="#" id="btn-lyrics-all">Fetch lyrics for all (retry)</a></li>
               <li><a href="#" id="btn-summarise-ollama">Summarise</a></li>
               <li><a href="#" id="btn-backfill-casual">Backfill casual lines</a></li>
@@ -62,6 +63,9 @@
           <button id="btn-reset-stuck" class="outline secondary">Reset stuck summaries</button>
           <small id="reset-stuck-result" class="muted"></small>
         </div>
+        <div class="debug-actions-row" style="margin-top:0.5rem">
+          <a href="/api/db/download" id="btn-db-download" role="button" class="outline secondary" download>Download DB backup</a>
+        </div>
       </section>
 
       <section class="debug-section">
@@ -87,8 +91,14 @@
           </article>
 
           <article class="debug-script-card">
+            <h4>Fetch Lyrics (retry failed)</h4>
+            <p>Re-attempt lyrics for tracks previously marked not found or errored, leaving tracks with lyrics untouched.</p>
+            <button class="outline" id="dbg-btn-lyrics-failed">Run</button>
+          </article>
+
+          <article class="debug-script-card">
             <h4>Fetch Lyrics (retry all)</h4>
-            <p>Re-attempt lyrics for tracks previously marked not found or errored.</p>
+            <p>Re-attempt lyrics for every track, including those that already have lyrics.</p>
             <button class="outline" id="dbg-btn-lyrics-all">Run</button>
           </article>
 
