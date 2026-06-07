@@ -39,10 +39,16 @@ USER_TEMPLATE = """Assign each of the following music tags to a broad category:
 
 def _parse_json_response(text: str) -> dict:
     text = text.strip()
+    if not text:
+        raise ValueError("Model returned an empty response")
     if text.startswith("```"):
         text = text.split("\n", 1)[1]
         text = text.rsplit("```", 1)[0]
-    return json.loads(text.strip())
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        log.debug("Raw response that failed to parse:\n%s", text)
+        raise
 
 
 def _collect_tags(db_path: str) -> list[str]:
@@ -169,8 +175,8 @@ def main() -> None:
     parser.add_argument("--claude-model", default=default_claude_model)
     parser.add_argument("--db", default=default_db)
     parser.add_argument(
-        "--chunk", type=int, default=0,
-        help="Split tags into chunks of this size (0 = send all at once)",
+        "--chunk", type=int, default=200,
+        help="Split tags into chunks of this size (0 = send all at once, default: 200)",
     )
     args = parser.parse_args()
 
