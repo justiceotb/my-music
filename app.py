@@ -236,7 +236,7 @@ def api_themes():
     """Return all tag themes sorted by number of tags."""
     conn = get_connection(DB_PATH)
     rows = conn.execute(
-        "SELECT theme, COUNT(*) as tag_count FROM tag_themes GROUP BY theme ORDER BY tag_count DESC"
+        "SELECT theme, COUNT(*) as tag_count FROM tag_themes GROUP BY theme ORDER BY theme COLLATE NOCASE"
     ).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
