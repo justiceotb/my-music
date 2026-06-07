@@ -76,6 +76,7 @@ def _call_ollama(client, model: str, tags: list[str]) -> dict:
             {"role": "user", "content": USER_TEMPLATE.format(tag_list=tag_list)},
         ],
         temperature=0.2,
+        max_tokens=8192,
     )
     return _parse_json_response(response.choices[0].message.content)
 
