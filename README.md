@@ -22,12 +22,9 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 
 ```
 my-music/
-├── all-songs.py          # Original Discogs → Excel exporter (unchanged)
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
 ├── fetch_lyrics_synced.py  # syncedlyrics fetcher - lrclib/netease, no token required
-├── fetch_lyrics_ovh.py   # Archived — lyrics.ovh fetcher (not wired in)
-├── fetch_lyrics_genius.py  # Archived — Genius fetcher (not wired in)
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── group_tags.py         # AI tag grouper — assigns tags to broad themes
 ├── app.py                # Flask web UI + REST API
@@ -44,7 +41,6 @@ my-music/
 │   ├── test_enrich_discogs.py
 │   └── test_app.py
 ├── requirements-dev.txt  # pytest + pytest-mock (dev only)
-├── .vscode/launch.json   # VS Code run/debug configs with env var instructions
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -85,22 +81,6 @@ pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/ -v
 ```
 
-### VS Code
-
-Open `.vscode/launch.json` - it has three pre-configured launch targets:
-- **pytest (all tests)** - runs the full suite; reads tokens from your OS environment or a `.env` file (tests don't need them, but the Flask app does)
-- **pytest (current file)** - runs the currently open test file
-- **Flask (local)** - starts the app locally; fill in your tokens in the `env` block
-
-**To set tokens without touching shell profiles:**
-1. Create a `.env` file in the project root (already in `.gitignore`):
-   ```
-   DISCOGS_TOKEN=your_token_here
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-2. Install the [DotENV](https://marketplace.visualstudio.com/items?itemName=mikestead.dotenv) extension - VS Code then reads these values automatically for the `${env:VAR}` references in `launch.json`.
-
----
 
 ## Quickstart (local)
 
@@ -257,8 +237,3 @@ Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to
 ## Container Logs (Portainer)
 
 All background job output (Discogs sync, lyrics fetch, summarise) is teed to the container's stdout so it appears in Portainer's log view in real time. Log lines are prefixed with the job ID, e.g. `[lyrics] 2026-01-01T00:00:00Z [DEBUG] …`.
-
-`fetch_lyrics_ovh.py` uses Python's `logging` module at DEBUG level, so you'll see:
-- Per-track lyrics.ovh query attempts with artist/title
-- HTTP error context for failed requests
-- Batch commit summaries
