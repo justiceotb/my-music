@@ -107,6 +107,12 @@ cp .env.example .env   # fill in your tokens
 docker compose up -d   # → http://localhost:5000
 ```
 
+This stack uses an external Docker network named `proxy`. If that network does not already exist, create it before starting the stack:
+
+```bash
+docker network create proxy
+```
+
 The database is stored in `./data/music.db` on the host - created automatically on first run and persisted across container rebuilds.
 
 > **Migrating from a previous install?** If you have an existing `./music.db` file, move it before restarting:
@@ -125,7 +131,7 @@ Point Portainer at `docker-compose.yml` and stack it from there.
 | `OLLAMA_HOST` | No | Ollama URL (default `http://host.docker.internal:11434`) |
 | `OLLAMA_MODEL` | No | Ollama model name (default `llama3`) |
 | `DB_PATH` | No | SQLite path inside container (default `music.db`; Docker uses `/app/data/music.db`) |
-| `TUNNEL_TOKEN` | Cloudflare only | Cloudflare Tunnel token |
+| `TUNNEL_TOKEN` | Cloudflare only | Cloudflare Tunnel token; only used if the optional `cloudflared` service is enabled in `docker-compose.yml` |
 
 ## Script Reference
 
@@ -223,7 +229,7 @@ Open `http://localhost:5000` after starting the app.
 
 ## Cloudflare Tunnel (optional external access)
 
-The `cloudflared` sidecar in `docker-compose.yml` starts automatically alongside `music-ui`. Set `TUNNEL_TOKEN` in your `.env` file and redeploy:
+The `cloudflared` service is currently commented out in `docker-compose.yml`. To enable a Cloudflare Tunnel, uncomment that service block, set `TUNNEL_TOKEN` in your `.env` file, and redeploy:
 
 ```bash
 # .env
@@ -232,7 +238,7 @@ TUNNEL_TOKEN=your_token_here
 docker compose up -d
 ```
 
-Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to restrict who can reach the UI externally.
+Because the tunnel is opt-in, external access is disabled by default. Apply a Zero Trust access policy in the Cloudflare dashboard (e.g. email OTP) to restrict who can reach the UI externally.
 
 ## Container Logs (Portainer)
 

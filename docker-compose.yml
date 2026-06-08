@@ -25,14 +25,20 @@
       retries: 3
       start_period: 10s
 
-  # Cloudflare Tunnel for external HTTPS access.
-  # Set TUNNEL_TOKEN in your .env file (from the Cloudflare Zero Trust dashboard).
-  # Starts automatically when TUNNEL_TOKEN is set.
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
-    restart: unless-stopped
-    depends_on:
-      - music-ui
+networks:
+  proxy:
+    external: true  # tells compose this network already exists, don't create it
+  default: {}
+
+  # # Cloudflare Tunnel for external HTTPS access.
+  # # USE IF YOU DON"T ALERADY HAVE A WAY TO EXPOSE THE APP TO THE INTERNET (e.g. via nginx reverse proxy).
+  # # Set TUNNEL_TOKEN in your .env file (from the Cloudflare Zero Trust dashboard).
+  # # Starts automatically when TUNNEL_TOKEN is set.
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - music-ui
