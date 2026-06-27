@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS track_singles (
     track_id            INTEGER NOT NULL REFERENCES tracks(id),
     discogs_release_id  INTEGER,
     single_title        TEXT,
+    aside               TEXT,
     bsides              TEXT,
+    side                TEXT,
     year                INTEGER,
     fetched_at          TEXT NOT NULL
 );
@@ -118,7 +120,9 @@ def init_db(db_path: str) -> None:
                     track_id            INTEGER NOT NULL REFERENCES tracks(id),
                     discogs_release_id  INTEGER,
                     single_title        TEXT,
+                    aside               TEXT,
                     bsides              TEXT,
+                    side                TEXT,
                     year                INTEGER,
                     fetched_at          TEXT NOT NULL
                 );
@@ -127,6 +131,13 @@ def init_db(db_path: str) -> None:
             conn.commit()
         except Exception:
             pass
+        # Migration: add aside and side columns to track_singles
+        for col in ("aside TEXT", "side TEXT"):
+            try:
+                conn.execute(f"ALTER TABLE track_singles ADD COLUMN {col}")
+                conn.commit()
+            except Exception:
+                pass
         # Migration: add lists and list_tracks tables
         try:
             conn.executescript("""

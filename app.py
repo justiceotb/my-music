@@ -153,7 +153,8 @@ def api_tracks():
         LEFT JOIN (
             SELECT track_id,
                    COUNT(*) as singles_count,
-                   GROUP_CONCAT(bsides, '|||') as singles_bsides
+                   GROUP_CONCAT(bsides, '|||') as singles_bsides,
+                   GROUP_CONCAT(side, '|||') as singles_sides
             FROM track_singles
             GROUP BY track_id
         ) ts ON ts.track_id = t.id
@@ -181,7 +182,7 @@ def api_tracks():
                a.format as album_format,
                t.lyrics_source, t.summary, t.theme_tags,
                t.ai_processed_at,
-               ts.singles_count, ts.singles_bsides,
+               ts.singles_count, ts.singles_bsides, ts.singles_sides,
                CASE WHEN EXISTS (SELECT 1 FROM list_tracks lt WHERE lt.track_id = t.id) THEN 1 ELSE 0 END as in_list
         FROM tracks t
         JOIN albums a ON a.discogs_id = t.album_id
@@ -202,6 +203,25 @@ def api_tracks():
     })
 
 
+def _resolve_track_id(conn, title: str, artist: str):
+    """Return the track id for a title/artist match in the local collection, or None."""
+    row = conn.execute(
+        """
+        SELECT t.id FROM tracks t
+        JOIN albums a ON a.discogs_id = t.album_id
+        WHERE LOWER(t.title) = LOWER(?)
+          AND (LOWER(a.artists_sort) = LOWER(?) OR LOWER(t.artists) = LOWER(?))
+        LIMIT 1
+        """,
+        (title, artist, artist),
+    ).fetchone()
+    return row["id"] if row else None
+
+
+def _resolve_track_ids(conn, titles: list, artist: str) -> list:
+    return [tid for t in titles if (tid := _resolve_track_id(conn, t, artist)) is not None]
+
+
 @app.route("/api/track/<int:track_id>")
 def api_track(track_id: int):
     conn = get_connection(DB_PATH)
@@ -217,11 +237,22 @@ def api_track(track_id: int):
         conn.close()
         return jsonify({"error": "Not found"}), 404
     result = dict(row)
-    singles = conn.execute(
-        "SELECT single_title, bsides, year FROM track_singles WHERE track_id = ? ORDER BY year",
+    artist = row["artists_sort"] or row["artists"] or ""
+    singles_rows = conn.execute(
+        "SELECT single_title, aside, bsides, side, year FROM track_singles WHERE track_id = ? ORDER BY year",
         (track_id,),
     ).fetchall()
-    result["singles"] = [dict(s) for s in singles]
+    enriched = []
+    for s in singles_rows:
+        entry = dict(s)
+        if s["side"] == "A" and s["bsides"]:
+            bside_titles = json.loads(s["bsides"])
+            entry["bside_track_ids"] = _resolve_track_ids(conn, bside_titles, artist)
+        elif s["side"] == "B" and s["aside"]:
+            aside_id = _resolve_track_id(conn, s["aside"], artist)
+            entry["aside_track_id"] = aside_id
+        enriched.append(entry)
+    result["singles"] = enriched
     conn.close()
     return jsonify(result)
 
@@ -299,6 +330,10 @@ def api_enrich():
 @app.route("/api/fetch-singles", methods=["POST"])
 def api_fetch_singles():
     data = request.get_json(silent=True) or {}
+    if data.get("reset_all"):
+        _start_job("fetch_singles", [sys.executable, "fetch_singles.py",
+                                      "--reset-all", "--db", DB_PATH])
+        return jsonify({"job_id": "fetch_singles"})
     if data.get("reset"):
         _start_job("fetch_singles", [sys.executable, "fetch_singles.py",
                                       "--reset", "--db", DB_PATH])
