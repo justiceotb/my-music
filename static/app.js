@@ -226,9 +226,9 @@ function renderTracks({ tracks, total, page, per_page }) {
 
     let bsidesHtml = "";
     if (t.singles_bsides) {
-      const allBsides = t.singles_bsides.split("|||")
+      const allBsides = [...new Set(t.singles_bsides.split("|||")
         .flatMap(s => { try { return JSON.parse(s); } catch { return []; } })
-        .filter(Boolean);
+        .filter(Boolean))];
       if (allBsides.length)
         bsidesHtml = `<p class="track-bsides">B-sides: ${allBsides.map(escHtml).join(", ")}</p>`;
     }
