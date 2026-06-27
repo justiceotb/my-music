@@ -24,7 +24,7 @@ from itertools import islice
 
 import discogs_client
 
-from db import init_db, get_connection, transaction
+from db import init_db, get_connection, transaction, resolve_track_id
 from version import __version__
 
 _ARTIST_SUFFIX = re.compile(r"\s*\(\d+\)\s*$")
@@ -84,6 +84,75 @@ def reset_all_singles(db_path: str) -> None:
         conn.execute("UPDATE tracks SET singles_checked_at = NULL")
         cleared = conn.execute("SELECT changes()").fetchone()[0]
     print(f"Deleted all singles data and cleared {cleared} tracks for re-fetching.", flush=True)
+
+
+def _backfill_bside_record(conn, db_path: str, aside_row: dict) -> int:
+    """Given an A-side track_singles row, insert records for any B-side tracks
+    that exist in our collection but don't yet have a singles entry for this release."""
+    bsides_json = aside_row["bsides"]
+    if not bsides_json:
+        return 0
+    bside_titles = json.loads(bsides_json)
+
+    artist_row = conn.execute(
+        "SELECT COALESCE(t.artists, a.artists_sort) AS artist "
+        "FROM tracks t JOIN albums a ON a.discogs_id = t.album_id "
+        "WHERE t.id = ?",
+        (aside_row["track_id"],),
+    ).fetchone()
+    artist = artist_row["artist"] if artist_row else None
+
+    count = 0
+    ts = now_iso()
+    for btitle in bside_titles:
+        btrack_id = resolve_track_id(conn, btitle, artist)
+        if btrack_id is None:
+            continue
+        exists = conn.execute(
+            "SELECT 1 FROM track_singles WHERE track_id = ? AND discogs_release_id = ?",
+            (btrack_id, aside_row["discogs_release_id"]),
+        ).fetchone()
+        if exists:
+            continue
+        with transaction(db_path) as wconn:
+            wconn.execute(
+                """
+                INSERT INTO track_singles
+                    (track_id, discogs_release_id, single_title, aside, bsides, side, year, fetched_at)
+                VALUES (?, ?, ?, ?, ?, 'B', ?, ?)
+                """,
+                (
+                    btrack_id,
+                    aside_row["discogs_release_id"],
+                    aside_row["single_title"],
+                    aside_row["aside"],
+                    aside_row["bsides"],
+                    aside_row["year"],
+                    ts,
+                ),
+            )
+            wconn.execute(
+                "UPDATE tracks SET singles_checked_at = ? WHERE id = ? AND singles_checked_at IS NULL",
+                (ts, btrack_id),
+            )
+        count += 1
+    return count
+
+
+def backfill_bside_singles(db_path: str) -> int:
+    """Walk all existing A-side track_singles rows and ensure each B-side that
+    exists in our tracks table has a corresponding track_singles record."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        "SELECT id, track_id, discogs_release_id, single_title, aside, bsides, side, year "
+        "FROM track_singles WHERE side = 'A' AND bsides IS NOT NULL"
+    ).fetchall()
+    total = 0
+    for row in rows:
+        total += _backfill_bside_record(conn, db_path, dict(row))
+    conn.close()
+    return total
 
 
 def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
@@ -167,6 +236,8 @@ def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
                                 bsides.append(tr.title)
                                 if tr_lower == title_lower:
                                     track_side = "B"
+                        bsides_json = json.dumps(bsides)
+                        inserted_at = now_iso()
                         with transaction(db_path) as wconn:
                             wconn.execute(
                                 """
@@ -180,12 +251,23 @@ def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
                                     release.id,
                                     release.title,
                                     aside,
-                                    json.dumps(bsides),
+                                    bsides_json,
                                     track_side,
                                     release.year,
-                                    now_iso(),
+                                    inserted_at,
                                 ),
                             )
+                        if track_side == "A" and bsides:
+                            read_conn = get_connection(db_path)
+                            _backfill_bside_record(read_conn, db_path, {
+                                "track_id": track_id,
+                                "discogs_release_id": release.id,
+                                "single_title": release.title,
+                                "aside": aside,
+                                "bsides": bsides_json,
+                                "year": release.year,
+                            })
+                            read_conn.close()
                         singles_found += 1
                     except Exception as ex:
                         print(f"  ! Error fetching release {result.id}: {ex}", flush=True)
@@ -222,6 +304,8 @@ def main() -> None:
                         help="Clear singles_checked_at for tracks with no singles found, then exit")
     parser.add_argument("--reset-all", action="store_true",
                         help="Delete ALL singles data and reset every track for re-fetching, then exit")
+    parser.add_argument("--backfill-bsides", action="store_true",
+                        help="Scan existing A-side records and create B-side track_singles entries for matching tracks, then exit")
     args = parser.parse_args()
 
     if args.reset_all:
@@ -230,6 +314,11 @@ def main() -> None:
 
     if args.reset:
         reset_singles(args.db)
+        return
+
+    if args.backfill_bsides:
+        n = backfill_bside_singles(args.db)
+        print(f"Backfilled {n} B-side track_singles record(s).", flush=True)
         return
 
     if not args.token:

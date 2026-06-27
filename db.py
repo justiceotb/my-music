@@ -161,6 +161,25 @@ def init_db(db_path: str) -> None:
             pass
 
 
+def resolve_track_id(conn, title: str, artist: str):
+    """Return the track id for a title/artist match in the local collection, or None."""
+    row = conn.execute(
+        """
+        SELECT t.id FROM tracks t
+        JOIN albums a ON a.discogs_id = t.album_id
+        WHERE LOWER(t.title) = LOWER(?)
+          AND (LOWER(a.artists_sort) = LOWER(?) OR LOWER(t.artists) = LOWER(?))
+        LIMIT 1
+        """,
+        (title, artist, artist),
+    ).fetchone()
+    return row["id"] if row else None
+
+
+def resolve_track_ids(conn, titles: list, artist: str) -> list:
+    return [tid for t in titles if (tid := resolve_track_id(conn, t, artist)) is not None]
+
+
 @contextmanager
 def transaction(db_path: str):
     """Yield a connection inside a transaction; commit on success, rollback on error."""

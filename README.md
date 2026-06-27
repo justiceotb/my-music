@@ -1,4 +1,4 @@
-﻿# My Music Meaning — v0.10.4
+﻿# My Music Meaning — v0.10.5
 
 A local, searchable database of vinyl records enriched with lyrics and AI-generated thematic summaries. Built with Python, SQLite, Flask, and Docker.
 
@@ -14,7 +14,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Tag themes: AI groups ~1300 individual tags into ~20–30 broad themes (Mood, Instrumentation, Era, etc.); a dropdown above the tag cloud filters to tags in a selected theme
 - Tag Review & Merge tool in Debug view: asks the local AI (Ollama or Claude) to identify near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them in one click
 - Filter chips (Has lyrics, No lyrics, Tagged, Owned singles, Released as single) with a Reset filters button to clear all active selections
-- Singles tracking: `fetch_singles.py` searches Discogs for single releases of album tracks and records whether each track was the **A-side or B-side** of the single, along with the flip-side title; track cards display "A-side single" or "B-side single" badges; the track detail modal shows each single release with a clickable link to the flip-side track if it exists in the collection; use `--reset` to re-check tracks with no singles found, or `--reset-all` to wipe and re-fetch everything (useful after schema upgrades)
+- Singles tracking: `fetch_singles.py` searches Discogs for single releases of album tracks and records whether each track was the **A-side or B-side** of the single, along with the flip-side title; when an A-side is found, any matching B-side tracks in the collection are automatically given their own singles record; track cards display "A-side single" or "B-side single" badges; the track detail modal shows each single release with a clickable link to the flip-side track if it exists in the collection; use `--reset` to re-check tracks with no singles found, `--reset-all` to wipe and re-fetch everything (useful after schema upgrades), or `--backfill-bsides` to retroactively create B-side records from existing A-side data
 - Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
 - Song list shows current page and total pages with First/Last/±10 jump buttons
 - All background tasks (sync, lyrics, summarise) are triggerable from the UI; Discogs artist disambiguation suffixes (e.g. "Alice Cooper (2)") are stripped before lyric searches
