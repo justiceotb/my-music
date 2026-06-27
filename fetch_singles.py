@@ -39,9 +39,17 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def titles_match(a: str, b: str) -> bool:
-    """Case-insensitive title comparison, stripping whitespace."""
-    return a.strip().lower() == b.strip().lower()
+def title_in_release(release_title: str, track_title: str) -> bool:
+    """True if track_title matches any segment of a release title.
+
+    Handles common Discogs single title formats:
+      - "Heroes / V-2 Schneider"  (A-side / B-side slash notation)
+      - "David Bowie - Heroes"    (Artist - Title prefix)
+    """
+    needle = track_title.strip().lower()
+    candidates = re.split(r"\s*/\s*|\s+[-–]\s+", release_title)
+    return any(c.strip().lower() == needle for c in candidates) \
+        or release_title.strip().lower() == needle
 
 
 def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
@@ -103,7 +111,7 @@ def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
                 time.sleep(1.0)
 
                 for result in islice(results, 5):
-                    if not titles_match(result.title, title):
+                    if not title_in_release(result.title, title):
                         continue
                     try:
                         release = d.release(result.id)
