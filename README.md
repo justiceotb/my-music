@@ -1,4 +1,4 @@
-﻿# My Music Meaning — v0.9.2
+﻿# My Music Meaning — v0.10.0
 
 A local, searchable database of vinyl records enriched with lyrics and AI-generated thematic summaries. Built with Python, SQLite, Flask, and Docker.
 
@@ -9,7 +9,8 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Generates 3–5 sentence thematic summaries and tag lists (e.g. `["longing", "travel", "alcohol"]`) using a local Ollama LLM or Claude
 - Responsive web UI: search by artist, album, title, lyrics, or theme tag; click any track for full lyrics and summary; one-click Summarise button in track detail modal
 - Mobile-friendly sidebar: collapses behind a "Filters ▾" toggle on small screens so song results are immediately visible; sidebar toggle hidden on desktop
-- Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
+- Sidebar with tabbed Tags / Albums / Lists panels — switch between the tag cloud, album list, and your curated lists without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
+- **Custom Lists**: create named song lists to curate tracks you want to hear or find on vinyl; add songs via the "+ List" popover on any track card or in the detail modal; list view shows each song with album name, sortable by added order / song title / album; inline rename and delete with confirmation; "in list" badge on track cards
 - Tag themes: AI groups ~1300 individual tags into ~20–30 broad themes (Mood, Instrumentation, Era, etc.); a dropdown above the tag cloud filters to tags in a selected theme
 - Tag Review & Merge tool in Debug view: asks the local AI (Ollama or Claude) to identify near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them in one click
 - Filter chips (Has lyrics, No lyrics, Tagged, Owned singles, Released as single) with a Reset filters button to clear all active selections
@@ -63,6 +64,12 @@ tag_themes (tag, theme)  -- maps each tag to a broad AI-generated theme category
 
 track_singles (id, track_id, discogs_release_id, single_title, bsides, year, fetched_at)
               -- one row per single release found for an album track; bsides is a JSON array
+
+lists (id, name, created_at)
+      -- user-created curated song lists
+
+list_tracks (list_id, track_id, position, added_at)
+            -- songs in each list; position supports future manual ordering
 ```
 
 ## Running tests locally

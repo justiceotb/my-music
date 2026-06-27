@@ -216,6 +216,8 @@ function renderTracks({ tracks, total, page, per_page }) {
       ? '<span class="badge badge-released-single">released as single</span>'
       : "";
 
+    const inListBadge = t.in_list ? '<span class="badge badge-list">in list</span>' : "";
+
     let bsidesHtml = "";
     if (t.singles_bsides) {
       const allBsides = t.singles_bsides.split("|||")
@@ -232,11 +234,22 @@ function renderTracks({ tracks, total, page, per_page }) {
         ${trackArtist ? escHtml(trackArtist) + ' &mdash; ' : ''}${escHtml(t.album)} (${t.year || "?"})
         ${t.position ? `&middot; ${escHtml(t.position)}` : ""}
       </div>
-      <div class="track-chips">${lyricsBadge}${aiBadge}${tagsBadge}${ownedSingleBadge}${releasedAsSingleBadge}</div>
+      <div class="track-chips">${lyricsBadge}${aiBadge}${tagsBadge}${ownedSingleBadge}${releasedAsSingleBadge}${inListBadge}</div>
       ${t.summary ? `<p class="track-summary">${escHtml(t.summary.slice(0, 200))}…</p>` : ""}
       ${bsidesHtml}
       <div class="track-tags">${tagsHtml}</div>
     `;
+
+    // "+ List" button per card
+    const listBtnWrap = document.createElement("div");
+    listBtnWrap.className = "track-card-list-popover-wrap";
+    listBtnWrap.style.cssText = "position:relative;display:inline-block;margin-top:0.3rem";
+    const listBtn = document.createElement("button");
+    listBtn.className = "track-card-list-btn";
+    listBtn.textContent = "+ List";
+    listBtnWrap.appendChild(listBtn);
+    card.appendChild(listBtnWrap);
+    attachCardListPopover(listBtn, t.id);
 
     // Tag pill clicks within card
     card.querySelectorAll(".tag-pill[data-tag]").forEach(pill => {
@@ -834,10 +847,361 @@ el("btn-group-tags").addEventListener("click", async () => {
   }
 });
 
+// ── Lists ─────────────────────────────────────
+
+let allLists = [];
+let currentListId = null;
+let currentListSort = "added";
+let currentListTracks = [];
+
+async function loadLists() {
+  try {
+    allLists = await apiFetch("/api/lists");
+    renderListsSidebar();
+  } catch (_) {}
+}
+
+function renderListsSidebar() {
+  const ul = el("lists-sidebar");
+  ul.innerHTML = "";
+  if (!allLists.length) {
+    ul.innerHTML = '<li style="font-size:0.82rem;color:var(--pico-muted-color);padding:0.3rem 0.5rem">No lists yet</li>';
+    return;
+  }
+  allLists.forEach(list => {
+    const li = document.createElement("li");
+    li.className = "list-sidebar-item" + (currentListId === list.id ? " active" : "");
+    li.innerHTML = `
+      <span class="list-sidebar-name">${escHtml(list.name)}</span>
+      <span class="list-sidebar-count">${list.track_count}</span>
+    `;
+    li.addEventListener("click", () => openListView(list.id));
+    ul.appendChild(li);
+  });
+}
+
+async function openListView(listId) {
+  currentListId = listId;
+  currentListSort = "added";
+  document.querySelectorAll(".sidebar-tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === "lists"));
+  document.querySelectorAll(".sidebar-tab-panel").forEach(p => p.classList.toggle("hidden", p.dataset.panel !== "lists"));
+  renderListsSidebar();
+  el("track-list-view").classList.add("hidden");
+  el("list-detail-view").classList.remove("hidden");
+  document.querySelectorAll(".list-sort-btn").forEach(b => b.classList.toggle("active", b.dataset.listSort === "added"));
+  await refreshListDetail();
+}
+
+function closeListView() {
+  currentListId = null;
+  el("list-detail-view").classList.add("hidden");
+  el("track-list-view").classList.remove("hidden");
+  renderListsSidebar();
+}
+
+async function refreshListDetail() {
+  const list = allLists.find(l => l.id === currentListId);
+  if (!list) return;
+  el("list-detail-title").textContent = list.name;
+  el("list-rename-form").classList.add("hidden");
+  try {
+    currentListTracks = await apiFetch(`/api/lists/${currentListId}/tracks`);
+    renderListDetailTracks();
+  } catch (_) {}
+}
+
+function sortedListTracks() {
+  const tracks = [...currentListTracks];
+  if (currentListSort === "title") {
+    tracks.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (currentListSort === "album") {
+    tracks.sort((a, b) => a.album_title.localeCompare(b.album_title));
+  }
+  return tracks;
+}
+
+function renderListDetailTracks() {
+  const container = el("list-detail-tracks");
+  const tracks = sortedListTracks();
+  if (!tracks.length) {
+    container.innerHTML = '<div class="list-empty-state">No songs yet.<br>Add songs using the <strong>+ List</strong> button on any track.</div>';
+    return;
+  }
+  container.innerHTML = "";
+  tracks.forEach(t => {
+    const row = document.createElement("div");
+    row.className = "list-track-row";
+    const artist = t.artists || t.artists_sort || "";
+    row.innerHTML = `
+      <div class="list-track-info">
+        <div class="list-track-title">${escHtml(t.title)}</div>
+        <div class="list-track-meta">${artist ? escHtml(artist) + ' &mdash; ' : ''}${escHtml(t.album_title)} (${t.year || "?"})${t.track_position ? ' &middot; ' + escHtml(t.track_position) : ''}</div>
+      </div>
+      <button class="list-track-remove" title="Remove from list">&times;</button>
+    `;
+    row.querySelector(".list-track-title").addEventListener("click", () => openModal(t.track_id));
+    row.querySelector(".list-track-remove").addEventListener("click", async () => {
+      await apiFetch(`/api/lists/${currentListId}/tracks/${t.track_id}`, { method: "DELETE" });
+      currentListTracks = currentListTracks.filter(x => x.track_id !== t.track_id);
+      const list = allLists.find(l => l.id === currentListId);
+      if (list) list.track_count = Math.max(0, list.track_count - 1);
+      renderListsSidebar();
+      renderListDetailTracks();
+    });
+    container.appendChild(row);
+  });
+}
+
+el("btn-new-list").addEventListener("click", () => {
+  el("new-list-form").classList.remove("hidden");
+  el("new-list-name").focus();
+});
+
+el("btn-new-list-cancel").addEventListener("click", () => {
+  el("new-list-form").classList.add("hidden");
+  el("new-list-name").value = "";
+});
+
+el("btn-new-list-save").addEventListener("click", async () => {
+  const name = el("new-list-name").value.trim();
+  if (!name) return;
+  try {
+    const newList = await apiFetch("/api/lists", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    allLists.push(newList);
+    allLists.sort((a, b) => a.name.localeCompare(b.name));
+    el("new-list-form").classList.add("hidden");
+    el("new-list-name").value = "";
+    renderListsSidebar();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+});
+
+el("new-list-name").addEventListener("keydown", e => {
+  if (e.key === "Enter") el("btn-new-list-save").click();
+  if (e.key === "Escape") el("btn-new-list-cancel").click();
+});
+
+el("btn-list-back").addEventListener("click", closeListView);
+
+el("btn-list-rename").addEventListener("click", () => {
+  el("list-rename-form").classList.remove("hidden");
+  el("list-rename-input").value = el("list-detail-title").textContent;
+  el("list-rename-input").focus();
+});
+
+el("btn-list-rename-cancel").addEventListener("click", () => {
+  el("list-rename-form").classList.add("hidden");
+});
+
+el("btn-list-rename-save").addEventListener("click", async () => {
+  const name = el("list-rename-input").value.trim();
+  if (!name) return;
+  try {
+    await apiFetch(`/api/lists/${currentListId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const list = allLists.find(l => l.id === currentListId);
+    if (list) list.name = name;
+    el("list-detail-title").textContent = name;
+    el("list-rename-form").classList.add("hidden");
+    renderListsSidebar();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+});
+
+el("list-rename-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") el("btn-list-rename-save").click();
+  if (e.key === "Escape") el("btn-list-rename-cancel").click();
+});
+
+el("btn-list-delete").addEventListener("click", async () => {
+  const list = allLists.find(l => l.id === currentListId);
+  if (!list) return;
+  if (!confirm(`Delete list "${list.name}"? This cannot be undone.`)) return;
+  try {
+    await apiFetch(`/api/lists/${currentListId}`, { method: "DELETE" });
+    allLists = allLists.filter(l => l.id !== currentListId);
+    closeListView();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+});
+
+document.querySelectorAll(".list-sort-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentListSort = btn.dataset.listSort;
+    document.querySelectorAll(".list-sort-btn").forEach(b => b.classList.toggle("active", b === btn));
+    renderListDetailTracks();
+  });
+});
+
+// Add-to-list popover (modal)
+let listPopoverVisible = false;
+
+el("modal-btn-add-to-list").addEventListener("click", async e => {
+  e.stopPropagation();
+  const popover = el("modal-list-popover");
+  if (listPopoverVisible) {
+    popover.classList.add("hidden");
+    listPopoverVisible = false;
+    return;
+  }
+  listPopoverVisible = true;
+  popover.classList.remove("hidden");
+  popover.innerHTML = '<div class="list-popover-empty">Loading…</div>';
+
+  try {
+    const [lists, trackListIds] = await Promise.all([
+      apiFetch("/api/lists"),
+      apiFetch(`/api/track/${currentModalTrackId}/lists`),
+    ]);
+    allLists = lists;
+    if (!lists.length) {
+      popover.innerHTML = '<div class="list-popover-empty">No lists yet — create one in the Lists tab.</div>';
+      return;
+    }
+    const trackListSet = new Set(trackListIds);
+    popover.innerHTML = "";
+    lists.forEach(list => {
+      const item = document.createElement("div");
+      item.className = "list-popover-item";
+      const checked = trackListSet.has(list.id);
+      item.innerHTML = `
+        <input type="checkbox" id="lp-${list.id}" ${checked ? "checked" : ""} />
+        <label for="lp-${list.id}">${escHtml(list.name)}</label>
+      `;
+      const cb = item.querySelector("input");
+      cb.addEventListener("change", async () => {
+        try {
+          if (cb.checked) {
+            await apiFetch(`/api/lists/${list.id}/tracks/${currentModalTrackId}`, { method: "POST" });
+            list.track_count = (list.track_count || 0) + 1;
+            trackListSet.add(list.id);
+          } else {
+            await apiFetch(`/api/lists/${list.id}/tracks/${currentModalTrackId}`, { method: "DELETE" });
+            list.track_count = Math.max(0, (list.track_count || 1) - 1);
+            trackListSet.delete(list.id);
+          }
+          renderListsSidebar();
+          if (currentListId === list.id) refreshListDetail();
+          loadTracks();
+        } catch (_) {
+          cb.checked = !cb.checked;
+        }
+      });
+      popover.appendChild(item);
+    });
+  } catch (err) {
+    popover.innerHTML = `<div class="list-popover-empty">Error: ${escHtml(err.message)}</div>`;
+  }
+});
+
+document.addEventListener("click", e => {
+  if (!listPopoverVisible) return;
+  const popover = el("modal-list-popover");
+  const btn = el("modal-btn-add-to-list");
+  if (popover && !popover.contains(e.target) && e.target !== btn) {
+    popover.classList.add("hidden");
+    listPopoverVisible = false;
+  }
+});
+
+el("track-modal").addEventListener("close", () => {
+  el("modal-list-popover").classList.add("hidden");
+  listPopoverVisible = false;
+});
+
+// Track card "+ List" popover
+function attachCardListPopover(btn, trackId) {
+  let cardPopoverEl = null;
+  let cardPopoverVisible = false;
+  const closeCardPopover = () => {
+    if (cardPopoverEl) { cardPopoverEl.remove(); cardPopoverEl = null; }
+    cardPopoverVisible = false;
+  };
+
+  btn.addEventListener("click", async e => {
+    e.stopPropagation();
+    if (cardPopoverVisible) { closeCardPopover(); return; }
+    cardPopoverVisible = true;
+    cardPopoverEl = document.createElement("div");
+    cardPopoverEl.className = "list-popover";
+    cardPopoverEl.style.cssText = "position:absolute;bottom:calc(100% + 0.4rem);right:0;z-index:50";
+    cardPopoverEl.innerHTML = '<div class="list-popover-empty">Loading…</div>';
+    btn.parentElement.style.position = "relative";
+    btn.parentElement.appendChild(cardPopoverEl);
+
+    try {
+      const [lists, trackListIds] = await Promise.all([
+        apiFetch("/api/lists"),
+        apiFetch(`/api/track/${trackId}/lists`),
+      ]);
+      allLists = lists;
+      const trackListSet = new Set(trackListIds);
+      if (!lists.length) {
+        cardPopoverEl.innerHTML = '<div class="list-popover-empty">No lists yet.</div>';
+        return;
+      }
+      cardPopoverEl.innerHTML = "";
+      lists.forEach(list => {
+        const item = document.createElement("div");
+        item.className = "list-popover-item";
+        const uid = `cp-${list.id}-${trackId}`;
+        item.innerHTML = `
+          <input type="checkbox" id="${uid}" ${trackListSet.has(list.id) ? "checked" : ""} />
+          <label for="${uid}">${escHtml(list.name)}</label>
+        `;
+        const cb = item.querySelector("input");
+        cb.addEventListener("change", async () => {
+          try {
+            if (cb.checked) {
+              await apiFetch(`/api/lists/${list.id}/tracks/${trackId}`, { method: "POST" });
+              list.track_count = (list.track_count || 0) + 1;
+              trackListSet.add(list.id);
+            } else {
+              await apiFetch(`/api/lists/${list.id}/tracks/${trackId}`, { method: "DELETE" });
+              list.track_count = Math.max(0, (list.track_count || 1) - 1);
+              trackListSet.delete(list.id);
+            }
+            renderListsSidebar();
+            if (currentListId === list.id) refreshListDetail();
+            // Update badge on this card
+            const chips = btn.closest(".track-card")?.querySelector(".track-chips");
+            if (chips) {
+              const existing = chips.querySelector(".badge-list");
+              if (trackListSet.size > 0 && !existing) {
+                chips.insertAdjacentHTML("beforeend", '<span class="badge badge-list">in list</span>');
+              } else if (trackListSet.size === 0 && existing) {
+                existing.remove();
+              }
+            }
+          } catch (_) { cb.checked = !cb.checked; }
+        });
+        cardPopoverEl.appendChild(item);
+      });
+    } catch (err) {
+      if (cardPopoverEl) cardPopoverEl.innerHTML = `<div class="list-popover-empty">Error: ${escHtml(err.message)}</div>`;
+    }
+  });
+
+  document.addEventListener("click", e => {
+    if (!cardPopoverVisible || !cardPopoverEl) return;
+    if (!cardPopoverEl.contains(e.target) && e.target !== btn) closeCardPopover();
+  });
+}
+
 // ── Init ──────────────────────────────────────
 
 (async () => {
-  await Promise.all([loadStats(), loadAlbums(), loadTags()]);
+  await Promise.all([loadStats(), loadAlbums(), loadTags(), loadLists()]);
   loadThemes();
   await loadTracks();
 })();

@@ -632,6 +632,284 @@ header.container-fluid nav details.dropdown > ul li a {
   flex-shrink: 0;
 }
 
+/* Lists sidebar */
+.lists-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.new-list-form {
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.new-list-form input {
+  width: 100%;
+}
+
+.new-list-form-btns {
+  display: flex;
+  gap: 0.35rem;
+}
+
+#lists-sidebar {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.list-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.list-sidebar-item:hover {
+  background: var(--pico-primary-background);
+  color: var(--pico-primary);
+}
+
+.list-sidebar-item.active {
+  background: var(--pico-primary-background);
+  color: var(--pico-primary);
+}
+
+.list-sidebar-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-sidebar-count {
+  font-size: 0.75rem;
+  color: var(--pico-muted-color);
+  white-space: nowrap;
+}
+
+/* List detail view */
+.list-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.list-detail-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.list-rename-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.list-rename-form input {
+  flex: 1;
+  min-width: 180px;
+  margin: 0;
+}
+
+.list-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.list-sort-label {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+}
+
+.list-sort-btn {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #4b5563;
+  background: transparent;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin: 0;
+}
+
+.list-sort-btn:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+.list-sort-btn.active {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border-color: #2563eb;
+}
+
+.list-track-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 6px;
+  margin-bottom: 0.35rem;
+}
+
+.list-track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-track-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-track-title:hover {
+  text-decoration: underline;
+}
+
+.list-track-meta {
+  font-size: 0.78rem;
+  color: var(--pico-muted-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-track-remove {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  margin: 0;
+  border-radius: 4px;
+  border: 1px solid #4b5563;
+  background: transparent;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.list-track-remove:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.list-empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--pico-muted-color);
+  font-size: 0.9rem;
+}
+
+/* Badge for "in a list" */
+.badge-list { background: #fef3c7; color: #92400e; }
+
+/* Add-to-list popover */
+.modal-list-btn-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.list-popover {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  right: 0;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--pico-card-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 100;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.list-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  user-select: none;
+}
+
+.list-popover-item:hover {
+  background: var(--pico-primary-background);
+}
+
+.list-popover-item input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: auto;
+}
+
+.list-popover-item label {
+  cursor: pointer;
+  margin: 0;
+  font-size: 0.85rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-popover-empty {
+  padding: 0.5rem 0.75rem;
+  color: var(--pico-muted-color);
+  font-size: 0.82rem;
+}
+
+/* Track card add-to-list button */
+.track-card-list-btn {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #4b5563;
+  background: transparent;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  margin: 0;
+  transition: background 0.12s, color 0.12s;
+  position: relative;
+}
+
+.track-card-list-btn:hover {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border-color: #2563eb;
+}
+
+.track-card-list-popover-wrap {
+  position: relative;
+  display: inline-block;
+}
+
 .hidden { display: none !important; }
 
 /* Stats */
