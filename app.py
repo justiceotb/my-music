@@ -221,7 +221,7 @@ def api_track(track_id: int):
     result = dict(row)
     artist = row["artists_sort"] or row["artists"] or ""
     singles_rows = conn.execute(
-        "SELECT single_title, aside, bsides, side, year FROM track_singles WHERE track_id = ? ORDER BY year",
+        "SELECT DISTINCT single_title, aside, bsides, side, year FROM track_singles WHERE track_id = ? ORDER BY year",
         (track_id,),
     ).fetchall()
     enriched = []
