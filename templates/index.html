@@ -160,6 +160,7 @@
           <div class="sidebar-tab-bar">
             <button class="sidebar-tab-btn active" data-tab="tags">Tags</button>
             <button class="sidebar-tab-btn" data-tab="albums">Albums</button>
+            <button class="sidebar-tab-btn" data-tab="lists">Lists</button>
           </div>
 
           <div class="sidebar-tab-panel" data-panel="tags">
@@ -193,32 +194,70 @@
             </div>
             <ul id="albums"></ul>
           </div>
+
+          <div class="sidebar-tab-panel hidden" data-panel="lists">
+            <div class="lists-header">
+              <button id="btn-new-list" class="outline" style="font-size:0.8rem;padding:0.2rem 0.75rem;margin:0">+ New list</button>
+            </div>
+            <div id="new-list-form" class="new-list-form hidden">
+              <input type="text" id="new-list-name" placeholder="List name…" style="margin:0;font-size:0.85rem" />
+              <div class="new-list-form-btns">
+                <button id="btn-new-list-save" style="font-size:0.8rem;padding:0.2rem 0.75rem;margin:0">Create</button>
+                <button id="btn-new-list-cancel" class="outline secondary" style="font-size:0.8rem;padding:0.2rem 0.75rem;margin:0">Cancel</button>
+              </div>
+            </div>
+            <ul id="lists-sidebar"></ul>
+          </div>
         </div>
       </aside>
 
       <!-- Track list -->
       <section id="content">
-        <div class="content-toolbar">
-          <div id="result-info"></div>
-          <label class="sort-label">
-            Sort:
-            <select id="sort-select">
-              <option value="artist">Artist</option>
-              <option value="album">Album</option>
-              <option value="song">Song</option>
-            </select>
-          </label>
+        <div id="track-list-view">
+          <div class="content-toolbar">
+            <div id="result-info"></div>
+            <label class="sort-label">
+              Sort:
+              <select id="sort-select">
+                <option value="artist">Artist</option>
+                <option value="album">Album</option>
+                <option value="song">Song</option>
+              </select>
+            </label>
+          </div>
+          <div class="filter-chips">
+            <span class="tag-pill filter-chip" data-filter="has_lyrics">Has lyrics</span>
+            <span class="tag-pill filter-chip" data-filter="no_lyrics">No lyrics</span>
+            <span class="tag-pill filter-chip" data-filter="has_tags">Tagged</span>
+            <span class="tag-pill filter-chip" data-filter="owned_singles">Owned singles</span>
+            <span class="tag-pill filter-chip" data-filter="released_as_single">Released as single</span>
+            <button id="btn-reset-filters" class="reset-filters-btn hidden">× Reset filters</button>
+          </div>
+          <div id="tracks"></div>
+          <div id="pagination"></div>
         </div>
-        <div class="filter-chips">
-          <span class="tag-pill filter-chip" data-filter="has_lyrics">Has lyrics</span>
-          <span class="tag-pill filter-chip" data-filter="no_lyrics">No lyrics</span>
-          <span class="tag-pill filter-chip" data-filter="has_tags">Tagged</span>
-          <span class="tag-pill filter-chip" data-filter="owned_singles">Owned singles</span>
-          <span class="tag-pill filter-chip" data-filter="released_as_single">Released as single</span>
-          <button id="btn-reset-filters" class="reset-filters-btn hidden">× Reset filters</button>
+
+        <!-- List detail view -->
+        <div id="list-detail-view" class="hidden">
+          <div class="list-detail-header">
+            <button id="btn-list-back" class="outline secondary" style="font-size:0.85rem;padding:0.25rem 0.75rem;margin:0">← All tracks</button>
+            <h2 id="list-detail-title" class="list-detail-title"></h2>
+            <button id="btn-list-rename" class="outline secondary" title="Rename list" style="font-size:0.8rem;padding:0.2rem 0.6rem;margin:0">✏</button>
+            <button id="btn-list-delete" class="outline secondary" title="Delete list" style="font-size:0.8rem;padding:0.2rem 0.6rem;margin:0;color:#dc2626;border-color:#dc2626">🗑</button>
+          </div>
+          <div id="list-rename-form" class="list-rename-form hidden">
+            <input type="text" id="list-rename-input" style="margin:0;font-size:0.9rem" />
+            <button id="btn-list-rename-save" style="font-size:0.8rem;padding:0.2rem 0.75rem;margin:0">Save</button>
+            <button id="btn-list-rename-cancel" class="outline secondary" style="font-size:0.8rem;padding:0.2rem 0.75rem;margin:0">Cancel</button>
+          </div>
+          <div class="list-sort-bar">
+            <span class="list-sort-label">Sort:</span>
+            <button class="list-sort-btn active" data-list-sort="added">Added order</button>
+            <button class="list-sort-btn" data-list-sort="title">Song title A–Z</button>
+            <button class="list-sort-btn" data-list-sort="album">Album A–Z</button>
+          </div>
+          <div id="list-detail-tracks"></div>
         </div>
-        <div id="tracks"></div>
-        <div id="pagination"></div>
       </section>
 
     </div>
@@ -243,6 +282,10 @@
       <footer class="modal-actions">
         <button id="modal-btn-lyrics" class="outline secondary">Fetch Lyrics</button>
         <button id="modal-btn-summarise-ollama" class="outline secondary">Summarise</button>
+        <div class="modal-list-btn-wrap">
+          <button id="modal-btn-add-to-list" class="outline secondary">+ List</button>
+          <div id="modal-list-popover" class="list-popover hidden"></div>
+        </div>
       </footer>
     </article>
   </dialog>

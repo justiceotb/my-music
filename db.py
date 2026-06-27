@@ -54,6 +54,23 @@ CREATE TABLE IF NOT EXISTS track_singles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_track_singles_track ON track_singles(track_id);
+
+CREATE TABLE IF NOT EXISTS lists (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT    NOT NULL,
+    created_at TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS list_tracks (
+    list_id    INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    track_id   INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    position   INTEGER NOT NULL DEFAULT 0,
+    added_at   TEXT    NOT NULL,
+    PRIMARY KEY (list_id, track_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_list_tracks_list  ON list_tracks(list_id);
+CREATE INDEX IF NOT EXISTS idx_list_tracks_track ON list_tracks(track_id);
 """
 
 
@@ -106,6 +123,27 @@ def init_db(db_path: str) -> None:
                     fetched_at          TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_track_singles_track ON track_singles(track_id);
+            """)
+            conn.commit()
+        except Exception:
+            pass
+        # Migration: add lists and list_tracks tables
+        try:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS lists (
+                    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name       TEXT    NOT NULL,
+                    created_at TEXT    NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS list_tracks (
+                    list_id    INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+                    track_id   INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+                    position   INTEGER NOT NULL DEFAULT 0,
+                    added_at   TEXT    NOT NULL,
+                    PRIMARY KEY (list_id, track_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_list_tracks_list  ON list_tracks(list_id);
+                CREATE INDEX IF NOT EXISTS idx_list_tracks_track ON list_tracks(track_id);
             """)
             conn.commit()
         except Exception:

@@ -15,6 +15,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from threading import Thread
 
 from flask import Flask, jsonify, render_template, request, send_file
@@ -180,7 +181,8 @@ def api_tracks():
                a.format as album_format,
                t.lyrics_source, t.summary, t.theme_tags,
                t.ai_processed_at,
-               ts.singles_count, ts.singles_bsides
+               ts.singles_count, ts.singles_bsides,
+               CASE WHEN EXISTS (SELECT 1 FROM list_tracks lt WHERE lt.track_id = t.id) THEN 1 ELSE 0 END as in_list
         FROM tracks t
         JOIN albums a ON a.discogs_id = t.album_id
         {singles_join}
@@ -419,6 +421,134 @@ def api_stop_job(job_id: str):
             _jobs[job_id]["status"] = "stopped"
         return jsonify({"ok": True})
     return jsonify({"ok": False, "reason": "not running"})
+
+
+# ──────────────────────────────────────────────
+# API - lists
+# ──────────────────────────────────────────────
+
+def _now_utc() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+@app.route("/api/lists")
+def api_lists():
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        """SELECT l.id, l.name, l.created_at,
+                  COUNT(lt.track_id) as track_count
+           FROM lists l
+           LEFT JOIN list_tracks lt ON lt.list_id = l.id
+           GROUP BY l.id
+           ORDER BY l.name COLLATE NOCASE"""
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/lists", methods=["POST"])
+def api_lists_create():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+    conn = get_connection(DB_PATH)
+    cur = conn.execute(
+        "INSERT INTO lists (name, created_at) VALUES (?, ?)",
+        (name, _now_utc()),
+    )
+    conn.commit()
+    list_id = cur.lastrowid
+    row = conn.execute("SELECT id, name, created_at FROM lists WHERE id = ?", (list_id,)).fetchone()
+    conn.close()
+    return jsonify({**dict(row), "track_count": 0}), 201
+
+
+@app.route("/api/lists/<int:list_id>", methods=["PATCH"])
+def api_lists_rename(list_id: int):
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+    conn = get_connection(DB_PATH)
+    conn.execute("UPDATE lists SET name = ? WHERE id = ?", (name, list_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/lists/<int:list_id>", methods=["DELETE"])
+def api_lists_delete(list_id: int):
+    conn = get_connection(DB_PATH)
+    conn.execute("DELETE FROM list_tracks WHERE list_id = ?", (list_id,))
+    conn.execute("DELETE FROM lists WHERE id = ?", (list_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/lists/<int:list_id>/tracks")
+def api_list_tracks(list_id: int):
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        """SELECT t.id as track_id, t.title, t.artists, t.position as track_position,
+                  a.title as album_title, a.discogs_id as album_discogs_id, a.year,
+                  a.artists_sort,
+                  lt.added_at, lt.position as list_position
+           FROM list_tracks lt
+           JOIN tracks t ON t.id = lt.track_id
+           JOIN albums a ON a.discogs_id = t.album_id
+           WHERE lt.list_id = ?
+           ORDER BY lt.position, lt.added_at""",
+        (list_id,),
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/lists/<int:list_id>/tracks/<int:track_id>", methods=["POST"])
+def api_list_tracks_add(list_id: int, track_id: int):
+    conn = get_connection(DB_PATH)
+    # Get next position
+    row = conn.execute(
+        "SELECT COALESCE(MAX(position), -1) + 1 FROM list_tracks WHERE list_id = ?",
+        (list_id,),
+    ).fetchone()
+    next_pos = row[0]
+    try:
+        conn.execute(
+            "INSERT INTO list_tracks (list_id, track_id, position, added_at) VALUES (?, ?, ?, ?)",
+            (list_id, track_id, next_pos, _now_utc()),
+        )
+        conn.commit()
+    except Exception:
+        conn.close()
+        return jsonify({"error": "Already in list"}), 409
+    conn.close()
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/lists/<int:list_id>/tracks/<int:track_id>", methods=["DELETE"])
+def api_list_tracks_remove(list_id: int, track_id: int):
+    conn = get_connection(DB_PATH)
+    conn.execute(
+        "DELETE FROM list_tracks WHERE list_id = ? AND track_id = ?",
+        (list_id, track_id),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/track/<int:track_id>/lists")
+def api_track_lists(track_id: int):
+    conn = get_connection(DB_PATH)
+    rows = conn.execute(
+        "SELECT list_id FROM list_tracks WHERE track_id = ?",
+        (track_id,),
+    ).fetchall()
+    conn.close()
+    return jsonify([r["list_id"] for r in rows])
 
 
 # ──────────────────────────────────────────────
