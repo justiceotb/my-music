@@ -1,4 +1,4 @@
-﻿# My Music Meaning — v0.10.1
+﻿# My Music Meaning — v0.10.3
 
 A local, searchable database of vinyl records enriched with lyrics and AI-generated thematic summaries. Built with Python, SQLite, Flask, and Docker.
 
@@ -14,7 +14,7 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Tag themes: AI groups ~1300 individual tags into ~20–30 broad themes (Mood, Instrumentation, Era, etc.); a dropdown above the tag cloud filters to tags in a selected theme
 - Tag Review & Merge tool in Debug view: asks the local AI (Ollama or Claude) to identify near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them in one click
 - Filter chips (Has lyrics, No lyrics, Tagged, Owned singles, Released as single) with a Reset filters button to clear all active selections
-- Singles tracking: album tracks on owned singles display A-side/B-side badges; `fetch_singles.py` searches Discogs to find which album tracks were also commercially released as singles and records the b-sides
+- Singles tracking: album tracks on owned singles display A-side/B-side badges; `fetch_singles.py` searches Discogs to find which album tracks were also commercially released as singles and records the b-sides; use `--reset` to clear the checked status for tracks with no singles found and re-run the search (fixes tracks incorrectly stamped by the v0.9.0 slice bug)
 - Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
 - Song list shows current page and total pages with First/Last/±10 jump buttons
 - All background tasks (sync, lyrics, summarise) are triggerable from the UI; Discogs artist disambiguation suffixes (e.g. "Alice Cooper (2)") are stripped before lyric searches

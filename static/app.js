@@ -687,6 +687,14 @@ el("dbg-btn-fetch-singles").addEventListener("click", () => {
   startJob("fetch_singles", () => apiFetch("/api/fetch-singles", { method: "POST" }));
 });
 
+el("dbg-btn-reset-singles").addEventListener("click", () => {
+  startJob("fetch_singles", () => apiFetch("/api/fetch-singles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reset: true }),
+  }));
+});
+
 // ── Helpers ───────────────────────────────────
 
 function escHtml(str) {

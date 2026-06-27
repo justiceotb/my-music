@@ -52,6 +52,26 @@ def title_in_release(release_title: str, track_title: str) -> bool:
         or release_title.strip().lower() == needle
 
 
+def reset_singles(db_path: str) -> None:
+    """Clear singles_checked_at for tracks that have no singles recorded.
+
+    Tracks that were marked checked but found nothing are almost certainly
+    victims of the v0.9.0 slice bug — reset them so they get re-processed.
+    """
+    init_db(db_path)
+    with transaction(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE tracks SET singles_checked_at = NULL
+            WHERE id NOT IN (SELECT DISTINCT track_id FROM track_singles)
+            """
+        )
+        cleared = conn.execute(
+            "SELECT changes()"
+        ).fetchone()[0]
+    print(f"Cleared {cleared} tracks for re-checking.", flush=True)
+
+
 def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
     init_db(db_path)
 
@@ -169,7 +189,13 @@ def main() -> None:
     parser.add_argument("--db", default="music.db", help="SQLite database path")
     parser.add_argument("--batch", type=int, default=20,
                         help="Tracks per batch (default 20; Discogs rate limits apply)")
+    parser.add_argument("--reset", action="store_true",
+                        help="Clear singles_checked_at for tracks with no singles found, then exit")
     args = parser.parse_args()
+
+    if args.reset:
+        reset_singles(args.db)
+        return
 
     if not args.token:
         raise SystemExit("Discogs token required: --token or DISCOGS_TOKEN env var")
