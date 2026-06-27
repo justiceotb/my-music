@@ -20,7 +20,7 @@ from threading import Thread
 
 from flask import Flask, jsonify, render_template, request, send_file
 
-from db import init_db, get_connection
+from db import init_db, get_connection, resolve_track_id, resolve_track_ids
 from version import __version__
 
 app = Flask(__name__)
@@ -203,24 +203,6 @@ def api_tracks():
     })
 
 
-def _resolve_track_id(conn, title: str, artist: str):
-    """Return the track id for a title/artist match in the local collection, or None."""
-    row = conn.execute(
-        """
-        SELECT t.id FROM tracks t
-        JOIN albums a ON a.discogs_id = t.album_id
-        WHERE LOWER(t.title) = LOWER(?)
-          AND (LOWER(a.artists_sort) = LOWER(?) OR LOWER(t.artists) = LOWER(?))
-        LIMIT 1
-        """,
-        (title, artist, artist),
-    ).fetchone()
-    return row["id"] if row else None
-
-
-def _resolve_track_ids(conn, titles: list, artist: str) -> list:
-    return [tid for t in titles if (tid := _resolve_track_id(conn, t, artist)) is not None]
-
 
 @app.route("/api/track/<int:track_id>")
 def api_track(track_id: int):
@@ -247,9 +229,9 @@ def api_track(track_id: int):
         entry = dict(s)
         if s["side"] == "A" and s["bsides"]:
             bside_titles = json.loads(s["bsides"])
-            entry["bside_track_ids"] = _resolve_track_ids(conn, bside_titles, artist)
+            entry["bside_track_ids"] = resolve_track_ids(conn, bside_titles, artist)
         elif s["side"] == "B" and s["aside"]:
-            aside_id = _resolve_track_id(conn, s["aside"], artist)
+            aside_id = resolve_track_id(conn, s["aside"], artist)
             entry["aside_track_id"] = aside_id
         enriched.append(entry)
     result["singles"] = enriched
@@ -337,6 +319,10 @@ def api_fetch_singles():
     if data.get("reset"):
         _start_job("fetch_singles", [sys.executable, "fetch_singles.py",
                                       "--reset", "--db", DB_PATH])
+        return jsonify({"job_id": "fetch_singles"})
+    if data.get("backfill_bsides"):
+        _start_job("fetch_singles", [sys.executable, "fetch_singles.py",
+                                      "--backfill-bsides", "--db", DB_PATH])
         return jsonify({"job_id": "fetch_singles"})
     token = os.environ.get("DISCOGS_TOKEN")
     if not token:
