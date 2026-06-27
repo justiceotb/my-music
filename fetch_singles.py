@@ -20,6 +20,7 @@ import os
 import re
 import time
 from datetime import datetime, timezone
+from itertools import islice
 
 import discogs_client
 
@@ -101,7 +102,7 @@ def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
                 results = d.search(title, type="release", format="Single", artist=artist)
                 time.sleep(1.0)
 
-                for result in results[:5]:
+                for result in islice(results, 5):
                     if not titles_match(result.title, title):
                         continue
                     try:
