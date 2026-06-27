@@ -339,6 +339,10 @@ header.container-fluid .version-badge {
 
 .track-bsides { font-size: 0.8rem; color: var(--pico-muted-color, #666); margin: 0.25rem 0 0; }
 
+.modal-single-entry { font-size: 0.9rem; margin: 0.25rem 0; }
+.flip-side-link { font-size: 0.85rem; }
+.flip-side-text { font-size: 0.85rem; color: var(--pico-muted-color, #666); }
+
 /* Actions dropdown - align to right edge so it doesn't clip off-screen */
 nav > ul:last-child details.dropdown > ul {
   right: 0;

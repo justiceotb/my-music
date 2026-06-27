@@ -212,9 +212,15 @@ function renderTracks({ tracks, total, page, per_page }) {
         ownedSingleBadge = '<span class="badge badge-bside">B-side</span>';
     }
 
-    const releasedAsSingleBadge = t.singles_count
-      ? '<span class="badge badge-released-single">released as single</span>'
-      : "";
+    let releasedAsSingleBadge = "";
+    if (t.singles_count) {
+      const sides = (t.singles_sides || "").split("|||").filter(Boolean);
+      const hasA = sides.includes("A");
+      const hasB = sides.includes("B");
+      if (hasA) releasedAsSingleBadge += '<span class="badge badge-aside">A-side single</span>';
+      if (hasB) releasedAsSingleBadge += '<span class="badge badge-bside">B-side single</span>';
+      if (!hasA && !hasB) releasedAsSingleBadge = '<span class="badge badge-released-single">released as single</span>';
+    }
 
     const inListBadge = t.in_list ? '<span class="badge badge-list">in list</span>' : "";
 
@@ -337,10 +343,44 @@ async function openModal(trackId) {
     casualEl.style.display = "none";
   }
   el("modal-lyrics").textContent = t.lyrics || "(No lyrics yet)";
+
+  const singlesEl = el("modal-singles");
+  if (t.singles && t.singles.length) {
+    singlesEl.innerHTML = t.singles.map(s => {
+      const label = s.side === "A" ? "A-side" : s.side === "B" ? "B-side" : "single";
+      let flipHtml = "";
+      if (s.side === "A" && s.bsides) {
+        const bsideTitles = (() => { try { return JSON.parse(s.bsides); } catch { return []; } })();
+        const ids = s.bside_track_ids || [];
+        flipHtml = bsideTitles.map((title, i) => {
+          const tid = ids[i];
+          return tid
+            ? `<a href="#" class="flip-side-link" data-track-id="${tid}">B-side: ${escHtml(title)}</a>`
+            : `<span class="flip-side-text">B-side: ${escHtml(title)}</span>`;
+        }).join(" &middot; ");
+      } else if (s.side === "B" && s.aside) {
+        flipHtml = s.aside_track_id
+          ? `<a href="#" class="flip-side-link" data-track-id="${s.aside_track_id}">A-side: ${escHtml(s.aside)}</a>`
+          : `<span class="flip-side-text">A-side: ${escHtml(s.aside)}</span>`;
+      }
+      return `<p class="modal-single-entry"><strong>${label}:</strong> ${escHtml(s.single_title || "")} (${s.year || "?"})${flipHtml ? " &mdash; " + flipHtml : ""}</p>`;
+    }).join("");
+    singlesEl.style.display = "";
+  } else {
+    singlesEl.style.display = "none";
+  }
+
   el("track-modal").showModal();
 }
 
 el("modal-close").addEventListener("click", () => el("track-modal").close());
+
+el("modal-singles").addEventListener("click", e => {
+  const link = e.target.closest(".flip-side-link");
+  if (!link) return;
+  e.preventDefault();
+  openModal(parseInt(link.dataset.trackId, 10));
+});
 el("track-modal").addEventListener("click", e => {
   if (e.target === el("track-modal")) el("track-modal").close();
 });
@@ -692,6 +732,14 @@ el("dbg-btn-reset-singles").addEventListener("click", () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reset: true }),
+  }));
+});
+
+el("dbg-btn-reset-all-singles").addEventListener("click", () => {
+  startJob("fetch_singles", () => apiFetch("/api/fetch-singles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reset_all: true }),
   }));
 });
 

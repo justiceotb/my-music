@@ -72,6 +72,20 @@ def reset_singles(db_path: str) -> None:
     print(f"Cleared {cleared} tracks for re-checking.", flush=True)
 
 
+def reset_all_singles(db_path: str) -> None:
+    """Delete all track_singles data and reset singles_checked_at for every track.
+
+    Use this to re-fetch all singles data from scratch (e.g. after schema changes
+    that added new columns like side/aside).
+    """
+    init_db(db_path)
+    with transaction(db_path) as conn:
+        conn.execute("DELETE FROM track_singles")
+        conn.execute("UPDATE tracks SET singles_checked_at = NULL")
+        cleared = conn.execute("SELECT changes()").fetchone()[0]
+    print(f"Deleted all singles data and cleared {cleared} tracks for re-fetching.", flush=True)
+
+
 def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
     init_db(db_path)
 
@@ -137,22 +151,37 @@ def fetch_singles(token: str, db_path: str, batch_size: int) -> None:
                         release = d.release(result.id)
                         time.sleep(1.0)
                         tracklist = release.tracklist
-                        bsides = [
-                            tr.title for tr in tracklist
-                            if tr.position and tr.position.upper().startswith("B")
-                        ]
+                        track_side = None
+                        aside = None
+                        bsides = []
+                        for tr in tracklist:
+                            pos = (tr.position or "").upper()
+                            tr_lower = tr.title.strip().lower()
+                            title_lower = title.strip().lower()
+                            if pos.startswith("A"):
+                                if aside is None:
+                                    aside = tr.title
+                                if tr_lower == title_lower:
+                                    track_side = "A"
+                            elif pos.startswith("B"):
+                                bsides.append(tr.title)
+                                if tr_lower == title_lower:
+                                    track_side = "B"
                         with transaction(db_path) as wconn:
                             wconn.execute(
                                 """
                                 INSERT INTO track_singles
-                                    (track_id, discogs_release_id, single_title, bsides, year, fetched_at)
-                                VALUES (?, ?, ?, ?, ?, ?)
+                                    (track_id, discogs_release_id, single_title,
+                                     aside, bsides, side, year, fetched_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                                 """,
                                 (
                                     track_id,
                                     release.id,
                                     release.title,
+                                    aside,
                                     json.dumps(bsides),
+                                    track_side,
                                     release.year,
                                     now_iso(),
                                 ),
@@ -191,7 +220,13 @@ def main() -> None:
                         help="Tracks per batch (default 20; Discogs rate limits apply)")
     parser.add_argument("--reset", action="store_true",
                         help="Clear singles_checked_at for tracks with no singles found, then exit")
+    parser.add_argument("--reset-all", action="store_true",
+                        help="Delete ALL singles data and reset every track for re-fetching, then exit")
     args = parser.parse_args()
+
+    if args.reset_all:
+        reset_all_singles(args.db)
+        return
 
     if args.reset:
         reset_singles(args.db)

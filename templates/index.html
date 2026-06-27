@@ -121,6 +121,7 @@
             <p>Search Discogs to find which album tracks were released as singles and record their b-sides.</p>
             <button class="outline" id="dbg-btn-fetch-singles">Run</button>
             <button class="outline secondary" id="dbg-btn-reset-singles" style="margin-left:0.5rem" title="Clear checked status for tracks with no singles found, then re-fetch">Reset &amp; re-fetch</button>
+            <button class="outline secondary" id="dbg-btn-reset-all-singles" style="margin-left:0.5rem" title="Delete ALL singles data and re-fetch from scratch (picks up new A/B-side data)">Reset all &amp; re-fetch</button>
           </article>
 
         </div>
@@ -275,6 +276,7 @@
         <a id="modal-discogs-link" href="#" target="_blank" rel="noopener" class="discogs-link hidden">View on Discogs ↗</a>
       </header>
       <div id="modal-tags"></div>
+      <div id="modal-singles" style="display:none"></div>
       <p id="modal-summary"></p>
       <p id="modal-casual" class="modal-casual"></p>
       <details>
