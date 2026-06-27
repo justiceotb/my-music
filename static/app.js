@@ -203,6 +203,28 @@ function renderTracks({ tracks, total, page, per_page }) {
       ? '<span class="badge badge-tags">tags</span>'
       : "";
 
+    const isOwnedSingle = t.album_format && t.album_format.includes("Single");
+    let ownedSingleBadge = "";
+    if (isOwnedSingle && t.position) {
+      if (t.position.toUpperCase().startsWith("A"))
+        ownedSingleBadge = '<span class="badge badge-aside">A-side</span>';
+      else if (t.position.toUpperCase().startsWith("B"))
+        ownedSingleBadge = '<span class="badge badge-bside">B-side</span>';
+    }
+
+    const releasedAsSingleBadge = t.singles_count
+      ? '<span class="badge badge-released-single">released as single</span>'
+      : "";
+
+    let bsidesHtml = "";
+    if (t.singles_bsides) {
+      const allBsides = t.singles_bsides.split("|||")
+        .flatMap(s => { try { return JSON.parse(s); } catch { return []; } })
+        .filter(Boolean);
+      if (allBsides.length)
+        bsidesHtml = `<p class="track-bsides">B-sides: ${allBsides.map(escHtml).join(", ")}</p>`;
+    }
+
     const trackArtist = t.artists || t.artists_sort || "";
     card.innerHTML = `
       <h4>${escHtml(t.title)}</h4>
@@ -210,8 +232,9 @@ function renderTracks({ tracks, total, page, per_page }) {
         ${trackArtist ? escHtml(trackArtist) + ' &mdash; ' : ''}${escHtml(t.album)} (${t.year || "?"})
         ${t.position ? `&middot; ${escHtml(t.position)}` : ""}
       </div>
-      <div class="track-chips">${lyricsBadge}${aiBadge}${tagsBadge}</div>
+      <div class="track-chips">${lyricsBadge}${aiBadge}${tagsBadge}${ownedSingleBadge}${releasedAsSingleBadge}</div>
       ${t.summary ? `<p class="track-summary">${escHtml(t.summary.slice(0, 200))}…</p>` : ""}
+      ${bsidesHtml}
       <div class="track-tags">${tagsHtml}</div>
     `;
 
@@ -460,6 +483,11 @@ el("btn-backfill-casual").addEventListener("click", e => {
   }));
 });
 
+el("btn-fetch-singles").addEventListener("click", e => {
+  e.preventDefault();
+  startJob("fetch_singles", () => apiFetch("/api/fetch-singles", { method: "POST" }));
+});
+
 
 // ── Job polling ───────────────────────────────
 
@@ -640,6 +668,10 @@ el("dbg-btn-sync").addEventListener("click", () => {
 
 el("dbg-btn-enrich").addEventListener("click", () => {
   startJob("enrich", () => apiFetch("/api/enrich", { method: "POST" }));
+});
+
+el("dbg-btn-fetch-singles").addEventListener("click", () => {
+  startJob("fetch_singles", () => apiFetch("/api/fetch-singles", { method: "POST" }));
 });
 
 // ── Helpers ───────────────────────────────────

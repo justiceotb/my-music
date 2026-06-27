@@ -333,6 +333,11 @@ header.container-fluid .version-badge {
 .badge-missing { background: #fee2e2; color: #991b1b; }
 .badge-ai      { background: #e0e7ff; color: #3730a3; }
 .badge-tags    { background: #ccfbf1; color: #0f766e; }
+.badge-aside           { background: #7c3aed; color: #fff; }
+.badge-bside           { background: #9d174d; color: #fff; }
+.badge-released-single { background: #0369a1; color: #fff; }
+
+.track-bsides { font-size: 0.8rem; color: var(--pico-muted-color, #666); margin: 0.25rem 0 0; }
 
 /* Actions dropdown - align to right edge so it doesn't clip off-screen */
 nav > ul:last-child details.dropdown > ul {

@@ -28,6 +28,7 @@
               <li><a href="#" id="btn-lyrics-all">Fetch lyrics for all (retry)</a></li>
               <li><a href="#" id="btn-summarise-ollama">Summarise</a></li>
               <li><a href="#" id="btn-backfill-casual">Backfill casual lines</a></li>
+              <li><a href="#" id="btn-fetch-singles">Fetch singles data</a></li>
             </ul>
           </details>
         </li>
@@ -112,6 +113,12 @@
             <h4>Enrich from Discogs</h4>
             <p>Back-fill missing album fields (year, styles, format) from Discogs release pages.</p>
             <button class="outline" id="dbg-btn-enrich">Run</button>
+          </article>
+
+          <article class="debug-script-card">
+            <h4>Fetch Singles</h4>
+            <p>Search Discogs to find which album tracks were released as singles and record their b-sides.</p>
+            <button class="outline" id="dbg-btn-fetch-singles">Run</button>
           </article>
 
         </div>
@@ -206,6 +213,8 @@
           <span class="tag-pill filter-chip" data-filter="has_lyrics">Has lyrics</span>
           <span class="tag-pill filter-chip" data-filter="no_lyrics">No lyrics</span>
           <span class="tag-pill filter-chip" data-filter="has_tags">Tagged</span>
+          <span class="tag-pill filter-chip" data-filter="owned_singles">Owned singles</span>
+          <span class="tag-pill filter-chip" data-filter="released_as_single">Released as single</span>
           <button id="btn-reset-filters" class="reset-filters-btn hidden">× Reset filters</button>
         </div>
         <div id="tracks"></div>
