@@ -141,8 +141,22 @@ def api_tracks():
         clauses.append("(t.lyrics_source IN ('not_found', 'error') OR t.lyrics_source IS NULL)")
     elif filter_mode == "has_tags":
         clauses.append("(t.theme_tags IS NOT NULL AND t.theme_tags != '[]')")
+    elif filter_mode == "owned_singles":
+        clauses.append("a.format LIKE '%Single%'")
+    elif filter_mode == "released_as_single":
+        clauses.append("ts.singles_count IS NOT NULL")
 
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    singles_join = """
+        LEFT JOIN (
+            SELECT track_id,
+                   COUNT(*) as singles_count,
+                   GROUP_CONCAT(bsides, '|||') as singles_bsides
+            FROM track_singles
+            GROUP BY track_id
+        ) ts ON ts.track_id = t.id
+    """
 
     track_order = {
         "artist": "a.artists_sort COLLATE NOCASE, a.year, t.id",
@@ -152,17 +166,24 @@ def api_tracks():
     }.get(sort, "a.artists_sort COLLATE NOCASE, a.year, t.id")
 
     total = conn.execute(
-        f"SELECT COUNT(*) FROM tracks t JOIN albums a ON a.discogs_id = t.album_id {where}", params
+        f"""SELECT COUNT(*) FROM tracks t
+            JOIN albums a ON a.discogs_id = t.album_id
+            {singles_join}
+            {where}""",
+        params,
     ).fetchone()[0]
 
     rows = conn.execute(
         f"""
         SELECT t.id, t.title, t.position, t.artists,
                a.title as album, a.artists_sort, a.year,
+               a.format as album_format,
                t.lyrics_source, t.summary, t.theme_tags,
-               t.ai_processed_at
+               t.ai_processed_at,
+               ts.singles_count, ts.singles_bsides
         FROM tracks t
         JOIN albums a ON a.discogs_id = t.album_id
+        {singles_join}
         {where}
         ORDER BY {track_order}
         LIMIT ? OFFSET ?
@@ -184,16 +205,23 @@ def api_track(track_id: int):
     conn = get_connection(DB_PATH)
     row = conn.execute(
         """
-        SELECT t.*, a.title as album, a.artists_sort, a.year, a.styles
+        SELECT t.*, a.title as album, a.artists_sort, a.year, a.styles, a.format as album_format
         FROM tracks t JOIN albums a ON a.discogs_id = t.album_id
         WHERE t.id = ?
         """,
         (track_id,),
     ).fetchone()
-    conn.close()
     if not row:
+        conn.close()
         return jsonify({"error": "Not found"}), 404
-    return jsonify(dict(row))
+    result = dict(row)
+    singles = conn.execute(
+        "SELECT single_title, bsides, year FROM track_singles WHERE track_id = ? ORDER BY year",
+        (track_id,),
+    ).fetchall()
+    result["singles"] = [dict(s) for s in singles]
+    conn.close()
+    return jsonify(result)
 
 
 @app.route("/api/tags")
@@ -264,6 +292,18 @@ def api_enrich():
     job_id = "enrich"
     _start_job(job_id, [sys.executable, "enrich_discogs.py", "--token", token, "--db", DB_PATH])
     return jsonify({"job_id": job_id})
+
+
+@app.route("/api/fetch-singles", methods=["POST"])
+def api_fetch_singles():
+    token = os.environ.get("DISCOGS_TOKEN")
+    if not token:
+        return jsonify({"error": "DISCOGS_TOKEN not set"}), 400
+    data = request.json or {}
+    batch = str(data.get("batch", 20))
+    _start_job("fetch_singles", [sys.executable, "fetch_singles.py",
+                                  "--token", token, "--db", DB_PATH, "--batch", batch])
+    return jsonify({"job_id": "fetch_singles"})
 
 
 @app.route("/api/fetch-lyrics/<int:track_id>", methods=["POST"])

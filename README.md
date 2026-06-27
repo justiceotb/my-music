@@ -12,7 +12,8 @@ A local, searchable database of vinyl records enriched with lyrics and AI-genera
 - Sidebar with tabbed Tags / Albums panels — switch between the tag cloud and album list without scrolling; tags panel shows total unique tag count and supports sort by count (desc/asc) or alphabetically
 - Tag themes: AI groups ~1300 individual tags into ~20–30 broad themes (Mood, Instrumentation, Era, etc.); a dropdown above the tag cloud filters to tags in a selected theme
 - Tag Review & Merge tool in Debug view: asks the local AI (Ollama or Claude) to identify near-duplicate tags (plurals, synonyms, spelling variants) and lets you merge them in one click
-- Filter chips (Has lyrics, No lyrics, Tagged) with a Reset filters button to clear all active selections
+- Filter chips (Has lyrics, No lyrics, Tagged, Owned singles, Released as single) with a Reset filters button to clear all active selections
+- Singles tracking: album tracks on owned singles display A-side/B-side badges; `fetch_singles.py` searches Discogs to find which album tracks were also commercially released as singles and records the b-sides
 - Per-track "Fetch Lyrics" and "Summarise" buttons in the track detail modal
 - Song list shows current page and total pages with First/Last/±10 jump buttons
 - All background tasks (sync, lyrics, summarise) are triggerable from the UI; Discogs artist disambiguation suffixes (e.g. "Alice Cooper (2)") are stripped before lyric searches
@@ -25,6 +26,7 @@ my-music/
 ├── db.py                 # Shared DB helpers (schema, connection, transactions)
 ├── import_discogs.py     # Discogs → SQLite importer
 ├── fetch_lyrics_synced.py  # syncedlyrics fetcher - lrclib/netease, no token required
+├── fetch_singles.py      # Discogs single-release finder — records b-sides for album tracks
 ├── summarise.py          # AI thematic summariser (Ollama or Claude)
 ├── group_tags.py         # AI tag grouper — assigns tags to broad themes
 ├── app.py                # Flask web UI + REST API
@@ -58,6 +60,9 @@ tracks (id, album_id, position, title, artists,
         ai_processed_at)
 
 tag_themes (tag, theme)  -- maps each tag to a broad AI-generated theme category
+
+track_singles (id, track_id, discogs_release_id, single_title, bsides, year, fetched_at)
+              -- one row per single release found for an album track; bsides is a JSON array
 ```
 
 ## Running tests locally

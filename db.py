@@ -42,6 +42,18 @@ CREATE TABLE IF NOT EXISTS tag_themes (
     tag   TEXT PRIMARY KEY,
     theme TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS track_singles (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id            INTEGER NOT NULL REFERENCES tracks(id),
+    discogs_release_id  INTEGER,
+    single_title        TEXT,
+    bsides              TEXT,
+    year                INTEGER,
+    fetched_at          TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_track_singles_track ON track_singles(track_id);
 """
 
 
@@ -71,6 +83,29 @@ def init_db(db_path: str) -> None:
                     tag   TEXT PRIMARY KEY,
                     theme TEXT NOT NULL
                 );
+            """)
+            conn.commit()
+        except Exception:
+            pass
+        # Migration: add singles_checked_at to tracks
+        try:
+            conn.execute("ALTER TABLE tracks ADD COLUMN singles_checked_at TEXT")
+            conn.commit()
+        except Exception:
+            pass
+        # Migration: add track_singles table
+        try:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS track_singles (
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    track_id            INTEGER NOT NULL REFERENCES tracks(id),
+                    discogs_release_id  INTEGER,
+                    single_title        TEXT,
+                    bsides              TEXT,
+                    year                INTEGER,
+                    fetched_at          TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_track_singles_track ON track_singles(track_id);
             """)
             conn.commit()
         except Exception:
