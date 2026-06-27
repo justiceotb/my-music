@@ -1138,6 +1138,7 @@ function attachCardListPopover(btn, trackId) {
     cardPopoverEl.innerHTML = '<div class="list-popover-empty">Loading…</div>';
     btn.parentElement.style.position = "relative";
     btn.parentElement.appendChild(cardPopoverEl);
+    cardPopoverEl.addEventListener("click", e => e.stopPropagation());
 
     try {
       const [lists, trackListIds] = await Promise.all([
