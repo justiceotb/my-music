@@ -1,4 +1,4 @@
-﻿# My Music Meaning
+﻿# My Music Meaning — v0.9.1
 
 A local, searchable database of vinyl records enriched with lyrics and AI-generated thematic summaries. Built with Python, SQLite, Flask, and Docker.
 

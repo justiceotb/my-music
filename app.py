@@ -299,7 +299,7 @@ def api_fetch_singles():
     token = os.environ.get("DISCOGS_TOKEN")
     if not token:
         return jsonify({"error": "DISCOGS_TOKEN not set"}), 400
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     batch = str(data.get("batch", 20))
     _start_job("fetch_singles", [sys.executable, "fetch_singles.py",
                                   "--token", token, "--db", DB_PATH, "--batch", batch])
